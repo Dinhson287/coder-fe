@@ -1,0 +1,49 @@
+<section class="bg-primary text-white text-center py-5">
+  <div class="container">
+    <h1 class="display-4">Nền tảng luyện code thuật toán online</h1>
+    <p class="lead">Luyện tập, chấm điểm tự động, chuẩn bị cho phỏng vấn và thi đấu</p>
+    <a routerLink="/problems" class="btn btn-light btn-lg mt-3">Bắt đầu ngay</a>
+  </div>
+</section>
+
+<section class="container my-5">
+  <h2 class="mb-4">Bài tập tiêu biểu</h2>
+  <div class="row">
+    <div class="col-md-4 mb-3" *ngFor="let problem of problems">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="card-title">{{problem.title}}</h5>
+          <span class="badge" [ngClass]="{
+            'bg-success': problem.level === 'Easy',
+            'bg-warning text-dark': problem.level === 'Medium',
+            'bg-danger': problem.level === 'Hard'
+          }">{{problem.level}}</span>
+          <a [routerLink]="['/problem', problem.id]" class="btn btn-primary mt-3 d-block">Giải ngay</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="container my-5">
+  <h2 class="mb-4">Top Coders</h2>
+  <ol class="list-group list-group-numbered">
+    <li class="list-group-item d-flex justify-content-between align-items-center" *ngFor="let coder of topCoders">
+      {{coder.name}}
+      <span class="badge bg-primary rounded-pill">{{coder.points}} điểm</span>
+    </li>
+  </ol>
+</section>
+
+<section class="container my-5">
+  <h2 class="mb-4">Chủ đề thuật toán</h2>
+  <div class="d-flex flex-wrap gap-3">
+    <a routerLink="/problems?tag=Sorting" class="btn btn-outline-primary">Sorting</a>
+    <a routerLink="/problems?tag=Graph" class="btn btn-outline-primary">Graph</a>
+    <a routerLink="/problems?tag=Dynamic%20Programming" class="btn btn-outline-primary">Dynamic Programming</a>
+    <a routerLink="/problems?tag=String" class="btn btn-outline-primary">String</a>
+    <a routerLink="/problems?tag=Number%20Theory" class="btn btn-outline-primary">Number theory</a>
+  </div>
+</section>
+

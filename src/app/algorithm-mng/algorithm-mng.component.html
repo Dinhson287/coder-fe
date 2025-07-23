@@ -1,0 +1,57 @@
+<div class="container my-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Quản lý bài tập</h2>
+    <button class="btn btn-primary">+ Thêm bài tập</button>
+  </div>
+
+  <div class="input-group mb-3">
+    <input type="text" class="form-control" placeholder="Tìm bài tập theo tên hoặc tag...">
+    <button class="btn btn-outline-primary" type="button">Tìm kiếm</button>
+  </div>
+
+  <table class="table table-hover">
+    <thead class="table-light">
+      <tr>
+        <th>#</th>
+        <th>Tiêu đề</th>
+        <th>Độ khó</th>
+        <th>Lượt giải</th>
+        <th>Trạng thái</th>
+        <th>Hành động</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let problem of problems">
+        <td>{{problem.id}}</td>
+        <td>{{problem.title}}</td>
+        <td>
+          <span class="badge"
+            [ngClass]="{
+              'bg-success': problem.level === 'Easy',
+              'bg-warning text-dark': problem.level === 'Medium',
+              'bg-danger': problem.level === 'Hard'
+            }">{{problem.level}}</span>
+        </td>
+        <td>{{problem.submissions}}</td>
+        <td>
+          <span class="badge bg-info" *ngIf="problem.status === 'Active'">Hoạt động</span>
+          <span class="badge bg-secondary" *ngIf="problem.status === 'Hidden'">Ẩn</span>
+        </td>
+        <td>
+          <button class="btn btn-sm btn-outline-success me-1">Sửa</button>
+          <button class="btn btn-sm btn-outline-danger">Xóa</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <nav>
+    <ul class="pagination justify-content-center">
+      <li class="page-item"><a class="page-link" href="#">Trước</a></li>
+      <li class="page-item active"><a class="page-link" href="#">1</a></li>
+      <li class="page-item"><a class="page-link" href="#">2</a></li>
+      <li class="page-item"><a class="page-link" href="#">3</a></li>
+      <li class="page-item"><a class="page-link" href="#">Sau</a></li>
+    </ul>
+  </nav>
+</div>

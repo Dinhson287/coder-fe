@@ -1,0 +1,51 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#">CodePractice</a>
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarNavDropdown">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="#">Trang chủ</a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/profile">Hồ sơ</a>
+        </li>
+
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+            Quản lý
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" routerLink="/algorithm-mng">Quản lý bài tập</a></li>
+            <li><a class="dropdown-item" routerLink="/user-mng">Quản lý thành viên</a></li>
+          </ul>
+        </li>
+
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+            Bài tập
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" routerLink="/exercises">Thuật toán cơ bản</a></li>
+            <li><a class="dropdown-item" routerLink="/exercises">Dynamic Programming</a></li>
+            <li><a class="dropdown-item" routerLink="/exercises">Graph</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" routerLink="/exercises">Tất cả bài tập</a></li>
+          </ul>
+        </li>
+
+      </ul>
+
+      <form class="d-flex">
+        <button class="btn btn-outline-primary" type="button" (click)="goToLogin()">Login</button>
+      </form>
+
+    </div>
+  </div>
+</nav>

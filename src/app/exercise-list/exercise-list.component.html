@@ -1,0 +1,13 @@
+<div class="container mt-4">
+  <h2>Danh sách bài tập</h2>
+  <div class="card mb-3" *ngFor="let exercise of exercises">
+    <div class="card-body">
+      <h5 class="card-title">{{ exercise.title }}</h5>
+      <p class="card-text">{{ exercise.description }}</p>
+      <span class="badge bg-primary">{{ exercise.language }}</span>
+      <button class="btn btn-sm btn-success float-end" (click)="viewExercise(exercise.id)">
+        Làm bài
+      </button>
+    </div>
+  </div>
+</div>
