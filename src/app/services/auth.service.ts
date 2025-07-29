@@ -54,6 +54,16 @@ export class AuthService {
     }
   }
 
+  private isTokenValid(token: string): boolean {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const now = Date.now() / 1000;
+      return payload.exp > (now + 30);
+    } catch (error) {
+      return false;
+    }
+  }
+
   login(username: string, password: string): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.baseUrl}/login`, {
       username,
@@ -82,27 +92,36 @@ export class AuthService {
     return this.http.post<User>(`${this.baseUrl}/register`, userData);
   }
 
-  refreshToken(): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.baseUrl}/refresh`, {})
-      .pipe(
-        tap(response => {
-          if (response.token && isPlatformBrowser(this.platformId)) {
-            localStorage.setItem('token', response.token);
-
-            const user: User = {
-              id: response.userId,
-              username: response.username,
-              email: response.email,
-              role: response.role as 'USER' | 'ADMIN',
-              createdAt: new Date().toISOString()
-            };
-
-            localStorage.setItem('currentUser', JSON.stringify(user));
-            this.currentUserSubject.next(user);
-          }
-        })
-      );
+  refreshToken(): Promise<boolean> {
+    return new Promise((resolve) => {
+      this.http.post<LoginResponse>(`${this.baseUrl}/refresh`, {}).subscribe({
+        next: (response) => {
+          this.storeAuthData(response);
+          resolve(true);
+        },
+        error: () => {
+          this.logout();
+          resolve(false);
+        }
+      });
+    });
   }
+
+    isTokenExpiringSoon(): boolean {
+    if (!isPlatformBrowser(this.platformId)) return false;
+
+    const token = this.getToken();
+    if (!token) return false;
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const now = Date.now() / 1000;
+      return (payload.exp - now) < 300;
+    } catch {
+      return true;
+    }
+  }
+
 
   logout(): void {
     if (isPlatformBrowser(this.platformId)) {
@@ -122,13 +141,7 @@ export class AuthService {
     const token = localStorage.getItem('token');
     if (!token) return false;
 
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const now = Date.now() / 1000;
-      return payload.exp > now;
-    } catch {
-      return false;
-    }
+    return this.isTokenValid(token);
   }
 
   isAdmin(): boolean {
@@ -140,4 +153,47 @@ export class AuthService {
     if (!isPlatformBrowser(this.platformId)) return null;
     return localStorage.getItem('token');
   }
+
+  debugToken(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('currentUser');
+
+    console.log('=== TOKEN DEBUG ===');
+    console.log('Token exists:', !!token);
+    console.log('User exists:', !!user);
+    console.log('Is logged in:', this.isLoggedIn());
+    console.log('Current user:', this.getCurrentUser());
+
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        console.log('Token payload:', payload);
+        console.log('Token expires at:', new Date(payload.exp * 1000));
+        console.log('Current time:', new Date());
+      } catch (error) {
+        console.error('Error parsing token:', error);
+      }
+    }
+    console.log('==================');
+  }
+
+  private storeAuthData(response: LoginResponse): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    localStorage.setItem('token', response.token);
+
+    const user: User = {
+      id: response.userId,
+      username: response.username,
+      email: response.email,
+      role: response.role as 'USER' | 'ADMIN',
+      createdAt: new Date().toISOString()
+    };
+
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    this.currentUserSubject.next(user);
+  }
+
 }

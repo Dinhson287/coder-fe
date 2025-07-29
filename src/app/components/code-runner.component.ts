@@ -4,6 +4,7 @@ import { MonacoCodeEditorComponent } from './monaco-code-editor.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../services/api.service';
+import { AuthService } from '../services/auth.service';
 import {Submission } from '../models/submission.model';
 import { Exercise } from '../models/exercise.model';
 import { Language } from '../models/language.model';
@@ -152,7 +153,8 @@ export class CodeRunnerComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private apiService: ApiService
+    private apiService: ApiService,
+    private authService: AuthService
   ) {}
 
   ngOnInit() {
@@ -206,6 +208,12 @@ export class CodeRunnerComponent implements OnInit {
   submitCode() {
     if (!this.exerciseId) return;
 
+    // Kiểm tra authentication trước khi submit
+    if (!this.authService.isLoggedIn()) {
+      alert('Bạn cần đăng nhập để nộp bài');
+      return;
+    }
+
     const code = this.codeEditor.getCode();
     if (!code.trim()) {
       alert('Vui lòng nhập code');
@@ -229,7 +237,12 @@ export class CodeRunnerComponent implements OnInit {
       error: (error) => {
         console.error('Error submitting code:', error);
         this.submitting = false;
-        alert('Có lỗi xảy ra khi nộp bài');
+
+        if (error.status === 401) {
+          alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        } else {
+          alert('Có lỗi xảy ra khi nộp bài: ' + (error.error?.message || error.message));
+        }
       }
     });
   }
