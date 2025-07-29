@@ -1,0 +1,124 @@
+<div class="container my-5">
+      <h2>Bài nộp của tôi</h2>
+
+      <div *ngIf="loading" class="text-center">
+        <div class="spinner-border" role="status"></div>
+      </div>
+
+      <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+      <div class="table-responsive" *ngIf="!loading && !error">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Bài tập</th>
+              <th>Ngôn ngữ</th>
+              <th>Trạng thái</th>
+              <th>Thời gian thực thi</th>
+              <th>Bộ nhớ</th>
+              <th>Thời gian nộp</th>
+              <th>Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let submission of submissions">
+              <td>{{ submission.id }}</td>
+              <td>
+                <a [routerLink]="['/code']" [queryParams]="{exerciseId: submission.exerciseId}">
+                  {{ submission.exerciseTitle }}
+                </a>
+              </td>
+              <td>{{ submission.languageName }}</td>
+              <td>
+                <span class="badge" [ngClass]="getStatusClass(submission.status)">
+                  {{ getStatusText(submission.status) }}
+                </span>
+              </td>
+              <td>{{ submission.time ? submission.time + 's' : '-' }}</td>
+              <td>{{ submission.memory ? submission.memory + 'KB' : '-' }}</td>
+              <td>{{ formatDate(submission.createdAt) }}</td>
+              <td>
+                <button class="btn btn-sm btn-outline-info" (click)="viewDetails(submission)">
+                  Chi tiết
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <nav *ngIf="totalPages > 1">
+        <ul class="pagination justify-content-center">
+          <li class="page-item" [class.disabled]="currentPage === 0">
+            <a class="page-link" (click)="changePage(currentPage - 1)">Trước</a>
+          </li>
+          <li
+            class="page-item"
+            *ngFor="let page of getPageNumbers()"
+            [class.active]="page === currentPage">
+            <a class="page-link" (click)="changePage(page)">{{ page + 1 }}</a>
+          </li>
+          <li class="page-item" [class.disabled]="currentPage === totalPages - 1">
+            <a class="page-link" (click)="changePage(currentPage + 1)">Sau</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+
+    <!-- Modal chi tiết submission -->
+    <div class="modal fade" [class.show]="showModal" [style.display]="showModal ? 'block' : 'none'" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content" *ngIf="selectedSubmission">
+          <div class="modal-header">
+            <h5 class="modal-title">Chi tiết bài nộp #{{ selectedSubmission.id }}</h5>
+            <button type="button" class="btn-close" (click)="closeModal()"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row">
+              <div class="col-md-6">
+                <strong>Bài tập:</strong> {{ selectedSubmission.exerciseTitle }}
+              </div>
+              <div class="col-md-6">
+                <strong>Ngôn ngữ:</strong> {{ selectedSubmission.languageName }}
+              </div>
+            </div>
+            <div class="row mt-2">
+              <div class="col-md-6">
+                <strong>Trạng thái:</strong>
+                <span class="badge ms-2" [ngClass]="getStatusClass(selectedSubmission.status)">
+                  {{ getStatusText(selectedSubmission.status) }}
+                </span>
+              </div>
+              <div class="col-md-6">
+                <strong>Thời gian:</strong> {{ formatDate(selectedSubmission.createdAt) }}
+              </div>
+            </div>
+
+            <div class="mt-3">
+              <strong>Source Code:</strong>
+              <pre class="bg-light p-3 mt-2"><code>{{ selectedSubmission.sourceCode }}</code></pre>
+            </div>
+
+            <div *ngIf="selectedSubmission.stdout" class="mt-3">
+              <strong>Output:</strong>
+              <pre class="bg-light p-3 mt-2">{{ selectedSubmission.stdout }}</pre>
+            </div>
+
+            <div *ngIf="selectedSubmission.stderr" class="mt-3">
+              <strong>Error:</strong>
+              <pre class="bg-danger text-white p-3 mt-2">{{ selectedSubmission.stderr }}</pre>
+            </div>
+
+            <div *ngIf="selectedSubmission.compileOutput" class="mt-3">
+              <strong>Compile Output:</strong>
+              <pre class="bg-warning p-3 mt-2">{{ selectedSubmission.compileOutput }}</pre>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">Đóng</button>
+          </div>
+        </div>
+      </div>
+    </div>

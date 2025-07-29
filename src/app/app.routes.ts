@@ -7,6 +7,9 @@ import { AlgorithmMngComponent } from './algorithm-mng/algorithm-mng.component';
 import { UserMngComponent } from './user-mng/user-mng.component';
 import { CodeEditorComponent } from './code-editor/code-editor.component';
 import { ExerciseListComponent } from './exercise-list/exercise-list.component';
+import { AuthGuard } from './guards/auth.guard';
+import { AdminGuard } from './guards/auth.guard';
+import { MySubmissionsComponent } from './my-submissions/my-submissions.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/home', pathMatch: 'full' },
@@ -24,24 +27,31 @@ export const routes: Routes = [
   },
   {
     path: 'profile',
-    component: ProfileComponent
+    component: ProfileComponent,
+    canActivate: [AuthGuard]
   },
   {
     path: 'algorithm-mng',
-    component: AlgorithmMngComponent
+    component: AlgorithmMngComponent,
+    canActivate: [AdminGuard]
   },
   {
     path: 'user-mng',
-    component: UserMngComponent
+    component: UserMngComponent,
+    canActivate: [AdminGuard]
   },
   {
     path: 'code',
-    component: CodeEditorComponent
+    component: CodeEditorComponent,
+    canActivate: [AuthGuard]
   },
   {
     path: 'exercises',
     component: ExerciseListComponent
   },
-
-
+  {
+    path: 'my-submissions',
+    component: MySubmissionsComponent,
+    canActivate: [AuthGuard]
+  }
 ];

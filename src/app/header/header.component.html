@@ -1,6 +1,6 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
   <div class="container-fluid">
-    <a class="navbar-brand" href="#">CodePractice</a>
+    <a class="navbar-brand" routerLink="/home">CodePractice</a>
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown">
       <span class="navbar-toggler-icon"></span>
@@ -8,16 +8,15 @@
 
     <div class="collapse navbar-collapse" id="navbarNavDropdown">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-
         <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="#">Trang chủ</a>
+          <a class="nav-link" routerLink="/home" routerLinkActive="active">Trang chủ</a>
         </li>
 
-        <li class="nav-item">
-          <a class="nav-link" routerLink="/profile">Hồ sơ</a>
+        <li class="nav-item" *ngIf="isLoggedIn">
+          <a class="nav-link" routerLink="/profile" routerLinkActive="active">Hồ sơ</a>
         </li>
 
-        <li class="nav-item dropdown">
+        <li class="nav-item dropdown" *ngIf="isLoggedIn && isAdmin()">
           <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
             Quản lý
           </a>
@@ -39,13 +38,26 @@
             <li><a class="dropdown-item" routerLink="/exercises">Tất cả bài tập</a></li>
           </ul>
         </li>
-
       </ul>
 
-      <form class="d-flex">
-        <button class="btn btn-outline-primary" type="button" (click)="goToLogin()">Login</button>
-      </form>
-
+      <div class="d-flex">
+        <div *ngIf="isLoggedIn; else loginButton" class="dropdown">
+          <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            {{ currentUser?.username }}
+          </button>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" routerLink="/profile">Hồ sơ</a></li>
+            <li><a class="dropdown-item" routerLink="/my-submissions">Bài nộp của tôi</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="#" (click)="logout()">Đăng xuất</a></li>
+          </ul>
+        </div>
+        <ng-template #loginButton>
+          <button class="btn btn-outline-primary" type="button" (click)="goToLogin()">
+            Đăng nhập
+          </button>
+        </ng-template>
+      </div>
     </div>
   </div>
 </nav>

@@ -1,13 +1,26 @@
 <div class="container mt-4">
   <h2>Danh sách bài tập</h2>
+
+  <div *ngIf="loading" class="text-center">
+    <div class="spinner-border" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
   <div class="card mb-3" *ngFor="let exercise of exercises">
     <div class="card-body">
       <h5 class="card-title">{{ exercise.title }}</h5>
       <p class="card-text">{{ exercise.description }}</p>
-      <span class="badge bg-primary">{{ exercise.language }}</span>
-      <button class="btn btn-sm btn-success float-end" (click)="viewExercise(exercise.id)">
-        Làm bài
-      </button>
+      <div class="d-flex justify-content-between align-items-center">
+        <span class="badge" [ngClass]="getDifficultyClass(exercise.difficulty)">
+          {{ getDifficultyText(exercise.difficulty) }}
+        </span>
+        <button class="btn btn-sm btn-success" (click)="viewExercise(exercise.id)">
+          Làm bài
+        </button>
+      </div>
     </div>
   </div>
 </div>

@@ -4,36 +4,49 @@
   </div>
 
   <div class="input-group mb-3">
-    <input type="text" class="form-control" placeholder="Tìm theo tên...">
-    <button class="btn btn-outline-primary" type="button">Tìm kiếm</button>
+    <input
+      type="text"
+      class="form-control"
+      placeholder="Tìm theo tên hoặc email..."
+      [(ngModel)]="searchTerm"
+      (input)="searchUsers()">
+    <button class="btn btn-outline-primary" type="button" (click)="searchUsers()">
+      Tìm kiếm
+    </button>
   </div>
 
-  <table class="table table-hover">
+  <div *ngIf="loading" class="text-center">
+    <div class="spinner-border" role="status"></div>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+  <table class="table table-hover" *ngIf="!loading && !error">
     <thead class="table-light">
       <tr>
         <th>#</th>
-        <th>Họ tên</th>
+        <th>Tên người dùng</th>
         <th>Email</th>
-        <th>Đã hoàn thành</th>
+        <th>Vai trò</th>
+        <th>Ngày tạo</th>
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let user of users">
-        <td>{{user.id}}</td>
-        <td>{{user.fullname}}</td>
-        <td>{{user.birthday}}</td>
-        <td>{{user.submissions}}</td>
+      <tr *ngFor="let user of filteredUsers">
+        <td>{{ user.id }}</td>
+        <td>{{ user.username }}</td>
+        <td>{{ user.email }}</td>
+        <td>
+          <span class="badge" [ngClass]="getRoleClass(user.role)">
+            {{ getRoleText(user.role) }}
+          </span>
+        </td>
+        <td>{{ formatDate(user.createdAt) }}</td>
       </tr>
     </tbody>
   </table>
 
-  <nav>
-    <ul class="pagination justify-content-center">
-      <li class="page-item"><a class="page-link" href="#">Trước</a></li>
-      <li class="page-item active"><a class="page-link" href="#">1</a></li>
-      <li class="page-item"><a class="page-link" href="#">2</a></li>
-      <li class="page-item"><a class="page-link" href="#">3</a></li>
-      <li class="page-item"><a class="page-link" href="#">Sau</a></li>
-    </ul>
+  <nav *ngIf="filteredUsers.length === 0 && !loading && !error">
+    <p class="text-center text-muted">Không tìm thấy người dùng nào</p>
   </nav>
 </div>
