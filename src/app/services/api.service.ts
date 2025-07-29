@@ -15,7 +15,6 @@ export class ApiService {
 
   constructor(private http: HttpClient) {}
 
-  // Exercise API
   getExercises(): Observable<Exercise[]> {
     return this.http.get<Exercise[]>(`${this.baseUrl}/exercises`);
   }
@@ -36,7 +35,6 @@ export class ApiService {
     return this.http.delete<void>(`${this.baseUrl}/exercises/${id}`);
   }
 
-  // Submission API
   createSubmission(submission: SubmissionCreate): Observable<Submission> {
     return this.http.post<Submission>(`${this.baseUrl}/submissions`, submission);
   }
@@ -45,12 +43,14 @@ export class ApiService {
     return this.http.get<Submission>(`${this.baseUrl}/submissions/${id}`);
   }
 
-  getMySubmissions(): Observable<Submission[]> {
-    return this.http.get<Submission[]>(`${this.baseUrl}/submissions/my-submissions`);
+  getMySubmissions(userId: number): Observable<Submission[]> {
+    const params = new HttpParams().set('userId', userId.toString());
+    return this.http.get<Submission[]>(`${this.baseUrl}/submissions/my-submissions`, { params });
   }
 
-  getMySubmissionsPaged(page: number = 0, size: number = 10): Observable<any> {
+  getMySubmissionsPaged(userId: number, page: number = 0, size: number = 10): Observable<any> {
     const params = new HttpParams()
+      .set('userId', userId.toString())
       .set('page', page.toString())
       .set('size', size.toString());
     return this.http.get<any>(`${this.baseUrl}/submissions/my-submissions/paged`, { params });
@@ -60,12 +60,14 @@ export class ApiService {
     return this.http.get<Submission[]>(`${this.baseUrl}/submissions/exercise/${exerciseId}`);
   }
 
-  getMySubmissionsForExercise(exerciseId: number): Observable<Submission[]> {
-    return this.http.get<Submission[]>(`${this.baseUrl}/submissions/exercise/${exerciseId}/my-submissions`);
+  getMySubmissionsForExercise(userId: number, exerciseId: number): Observable<Submission[]> {
+    const params = new HttpParams().set('userId', userId.toString());
+    return this.http.get<Submission[]>(`${this.baseUrl}/submissions/exercise/${exerciseId}/my-submissions`, { params });
   }
 
-  getLatestSuccessfulSubmission(exerciseId: number): Observable<Submission> {
-    return this.http.get<Submission>(`${this.baseUrl}/submissions/exercise/${exerciseId}/latest-success`);
+  getLatestSuccessfulSubmission(userId: number, exerciseId: number): Observable<Submission> {
+    const params = new HttpParams().set('userId', userId.toString());
+    return this.http.get<Submission>(`${this.baseUrl}/submissions/exercise/${exerciseId}/latest-success`, { params });
   }
 
   getPendingSubmissions(): Observable<Submission[]> {
@@ -76,16 +78,18 @@ export class ApiService {
     return this.http.put<Submission>(`${this.baseUrl}/submissions/${id}/result`, result);
   }
 
-  getMySubmissionStats(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/submissions/stats/my-stats`);
+  getMySubmissionStats(userId: number): Observable<any[]> {
+    const params = new HttpParams().set('userId', userId.toString());
+    return this.http.get<any[]>(`${this.baseUrl}/submissions/stats/my-stats`, { params });
   }
 
   getSubmissionStatsByLanguage(): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/submissions/stats/by-language`);
   }
 
-  deleteSubmission(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/submissions/${id}`);
+  deleteSubmission(id: number, userId: number): Observable<void> {
+    const params = new HttpParams().set('userId', userId.toString());
+    return this.http.delete<void>(`${this.baseUrl}/submissions/${id}`, { params });
   }
 
   // Language API
@@ -93,7 +97,7 @@ export class ApiService {
     return this.http.get<Language[]>(`${this.baseUrl}/languages`);
   }
 
-  // User API
+  // User API - Vẫn cần authentication
   getUsers(): Observable<User[]> {
     return this.http.get<User[]>(`${this.baseUrl}/user`);
   }

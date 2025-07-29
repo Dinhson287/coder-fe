@@ -25,7 +25,7 @@ export class ProfileComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private apiService: ApiService
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.currentUser = this.authService.getCurrentUser();
@@ -36,27 +36,33 @@ export class ProfileComponent implements OnInit {
   }
 
   loadUserStats() {
-    this.apiService.getMySubmissionStats().subscribe({
-      next: (stats) => {
-        this.processStats(stats);
-      },
-      error: (error) => {
-        console.error('Error loading stats:', error);
-      }
-    });
+    const currentUser = this.authService.getCurrentUser();
+    if (currentUser) {
+      this.apiService.getMySubmissionStats(currentUser.id).subscribe({
+        next: (stats) => {
+          this.processStats(stats);
+        },
+        error: (error) => {
+          console.error('Error loading stats:', error);
+        }
+      });
+    }
   }
 
   loadRecentSubmissions() {
-    this.apiService.getMySubmissions().subscribe({
-      next: (submissions) => {
-        this.submissions = submissions.slice(0, 10); // Latest 10
-        this.loading = false;
-      },
-      error: (error) => {
-        console.error('Error loading submissions:', error);
-        this.loading = false;
-      }
-    });
+    const currentUser = this.authService.getCurrentUser();
+    if (currentUser) {
+      this.apiService.getMySubmissions(currentUser.id).subscribe({
+        next: (submissions) => {
+          this.submissions = submissions.slice(0, 10); // Latest 10
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error('Error loading submissions:', error);
+          this.loading = false;
+        }
+      });
+    }
   }
 
   processStats(stats: any[]) {

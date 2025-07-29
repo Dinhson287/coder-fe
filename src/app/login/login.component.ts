@@ -1,26 +1,38 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [RouterModule, FormsModule,CommonModule],
+  imports: [RouterModule, FormsModule, CommonModule],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })
-export class LoginComponent {
-username = ''; // ← Đổi từ email thành username
+export class LoginComponent implements OnInit {
+  username = '';
   password = '';
   loading = false;
   error = '';
+  returnUrl = '/home';
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
+
+  ngOnInit() {
+    // Get return URL from route parameters or default to home
+    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/home';
+
+    // If already logged in, redirect
+    if (this.authService.isLoggedIn()) {
+      this.router.navigate([this.returnUrl]);
+    }
+  }
 
   onSubmit() {
     if (!this.username || !this.password) {
@@ -33,7 +45,8 @@ username = ''; // ← Đổi từ email thành username
 
     this.authService.login(this.username, this.password).subscribe({
       next: (response) => {
-        this.router.navigate(['/home']);
+        // Redirect to return URL or home
+        this.router.navigate([this.returnUrl]);
       },
       error: (error) => {
         this.error = 'Tên đăng nhập hoặc mật khẩu không đúng';

@@ -45,7 +45,14 @@ export class AuthInterceptor implements HttpInterceptor {
   }
 
   private shouldSkipInterceptor(req: HttpRequest<any>): boolean {
-    return req.url.includes('/api/auth') || !isPlatformBrowser(this.platformId);
+    const skipUrls = [
+      '/api/auth',
+      '/api/submissions',
+      '/api/exercises',
+      '/api/languages'
+    ];
+
+    return skipUrls.some(url => req.url.includes(url)) || !isPlatformBrowser(this.platformId);
   }
 
   private addTokenToRequest(req: HttpRequest<any>): HttpRequest<any> {

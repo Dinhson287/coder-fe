@@ -3,6 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { Submission } from '../models/submission.model';
 import { ApiService } from '../services/api.service';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-my-submissions',
@@ -21,26 +22,33 @@ export class MySubmissionsComponent implements OnInit {
   showModal = false;
   selectedSubmission: Submission | null = null;
 
-  constructor(private apiService: ApiService) {}
+  constructor(private apiService: ApiService,private authService: AuthService) {}
 
   ngOnInit() {
     this.loadSubmissions();
   }
 
-  loadSubmissions() {
-    this.loading = true;
-    this.apiService.getMySubmissionsPaged(this.currentPage, this.pageSize).subscribe({
-      next: (response) => {
-        this.submissions = response.content;
-        this.totalPages = response.totalPages;
-        this.loading = false;
-      },
-      error: (error) => {
-        this.error = 'Không thể tải danh sách bài nộp';
-        this.loading = false;
-      }
-    });
+loadSubmissions() {
+  const currentUser = this.authService.getCurrentUser();
+  if (!currentUser) {
+    this.error = 'Không thể xác định người dùng';
+    this.loading = false;
+    return;
   }
+
+  this.loading = true;
+  this.apiService.getMySubmissionsPaged(currentUser.id, this.currentPage, this.pageSize).subscribe({
+    next: (response) => {
+      this.submissions = response.content;
+      this.totalPages = response.totalPages;
+      this.loading = false;
+    },
+    error: (error) => {
+      this.error = 'Không thể tải danh sách bài nộp';
+      this.loading = false;
+    }
+  });
+}
 
   changePage(page: number) {
     if (page >= 0 && page < this.totalPages) {

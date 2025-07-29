@@ -46,8 +46,14 @@ export class AuthService {
 
     if (token && userData) {
       try {
-        const user = JSON.parse(userData);
-        this.currentUserSubject.next(user);
+
+        if (this.isTokenValid(token)) {
+          const user = JSON.parse(userData);
+          this.currentUserSubject.next(user);
+        } else {
+
+          this.logout();
+        }
       } catch (error) {
         this.logout();
       }
@@ -55,11 +61,14 @@ export class AuthService {
   }
 
   private isTokenValid(token: string): boolean {
+    if (!token) return false;
+
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       const now = Date.now() / 1000;
-      return payload.exp > (now + 30);
+      return payload.exp > (now + 60);
     } catch (error) {
+      console.error('Error parsing token:', error);
       return false;
     }
   }
@@ -71,18 +80,7 @@ export class AuthService {
     }).pipe(
       tap(response => {
         if (response.token && isPlatformBrowser(this.platformId)) {
-          localStorage.setItem('token', response.token);
-
-          const user: User = {
-            id: response.userId,
-            username: response.username,
-            email: response.email,
-            role: response.role as 'USER' | 'ADMIN',
-            createdAt: new Date().toISOString()
-          };
-
-          localStorage.setItem('currentUser', JSON.stringify(user));
-          this.currentUserSubject.next(user);
+          this.storeAuthData(response);
         }
       })
     );
@@ -92,14 +90,31 @@ export class AuthService {
     return this.http.post<User>(`${this.baseUrl}/register`, userData);
   }
 
+
   refreshToken(): Promise<boolean> {
+    if (!isPlatformBrowser(this.platformId)) {
+      return Promise.resolve(false);
+    }
+
+    const currentToken = this.getToken();
+    if (!currentToken) {
+      return Promise.resolve(false);
+    }
+
     return new Promise((resolve) => {
+
       this.http.post<LoginResponse>(`${this.baseUrl}/refresh`, {}).subscribe({
         next: (response) => {
-          this.storeAuthData(response);
-          resolve(true);
+          if (response.token) {
+            this.storeAuthData(response);
+            resolve(true);
+          } else {
+            this.logout();
+            resolve(false);
+          }
         },
-        error: () => {
+        error: (error) => {
+          console.error('Refresh token failed:', error);
           this.logout();
           resolve(false);
         }
@@ -107,7 +122,7 @@ export class AuthService {
     });
   }
 
-    isTokenExpiringSoon(): boolean {
+  isTokenExpiringSoon(): boolean {
     if (!isPlatformBrowser(this.platformId)) return false;
 
     const token = this.getToken();
@@ -121,7 +136,6 @@ export class AuthService {
       return true;
     }
   }
-
 
   logout(): void {
     if (isPlatformBrowser(this.platformId)) {
@@ -139,9 +153,9 @@ export class AuthService {
     if (!isPlatformBrowser(this.platformId)) return false;
 
     const token = localStorage.getItem('token');
-    if (!token) return false;
+    const user = this.getCurrentUser();
 
-    return this.isTokenValid(token);
+    return token !== null && user !== null && this.isTokenValid(token);
   }
 
   isAdmin(): boolean {
@@ -154,29 +168,9 @@ export class AuthService {
     return localStorage.getItem('token');
   }
 
-  debugToken(): void {
-    if (!isPlatformBrowser(this.platformId)) return;
-
-    const token = localStorage.getItem('token');
-    const user = localStorage.getItem('currentUser');
-
-    console.log('=== TOKEN DEBUG ===');
-    console.log('Token exists:', !!token);
-    console.log('User exists:', !!user);
-    console.log('Is logged in:', this.isLoggedIn());
-    console.log('Current user:', this.getCurrentUser());
-
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        console.log('Token payload:', payload);
-        console.log('Token expires at:', new Date(payload.exp * 1000));
-        console.log('Current time:', new Date());
-      } catch (error) {
-        console.error('Error parsing token:', error);
-      }
-    }
-    console.log('==================');
+  hasValidToken(): boolean {
+    const token = this.getToken();
+    return token !== null && this.isTokenValid(token);
   }
 
   private storeAuthData(response: LoginResponse): void {
@@ -195,5 +189,4 @@ export class AuthService {
     localStorage.setItem('currentUser', JSON.stringify(user));
     this.currentUserSubject.next(user);
   }
-
 }
