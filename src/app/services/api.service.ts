@@ -1,14 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Exercise} from '../models/exercise.model';
+import { Exercise } from '../models/exercise.model';
 import { Submission } from '../models/submission.model';
 import { SubmissionCreate } from '../models/submission-create.model';
 import { Language } from '../models/language.model';
 import { User } from '../models/user.model';
 
 @Injectable({
-  providedIn:'root'
+  providedIn: 'root'
 })
 export class ApiService {
   private baseUrl = 'http://localhost:8080/api';
@@ -95,10 +95,10 @@ export class ApiService {
 
   // User API
   getUsers(): Observable<User[]> {
-    return this.http.get<User[]>(`${this.baseUrl}/users`);
+    return this.http.get<User[]>(`${this.baseUrl}/user`);
   }
 
-  getCurrentUser(): Observable<User> {
-    return this.http.get<User>(`${this.baseUrl}/users/me`);
+  getCurrentUserProfile(): Observable<User> {
+    return this.http.get<User>(`${this.baseUrl}/user/profile`);
   }
 }

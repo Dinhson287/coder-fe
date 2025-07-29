@@ -12,7 +12,7 @@ import { AuthService } from '../services/auth.service';
   styleUrl: './login.component.scss'
 })
 export class LoginComponent {
-email = '';
+username = ''; // ← Đổi từ email thành username
   password = '';
   loading = false;
   error = '';
@@ -23,7 +23,7 @@ email = '';
   ) {}
 
   onSubmit() {
-    if (!this.email || !this.password) {
+    if (!this.username || !this.password) {
       this.error = 'Vui lòng nhập đầy đủ thông tin';
       return;
     }
@@ -31,12 +31,12 @@ email = '';
     this.loading = true;
     this.error = '';
 
-    this.authService.login(this.email, this.password).subscribe({
+    this.authService.login(this.username, this.password).subscribe({
       next: (response) => {
         this.router.navigate(['/home']);
       },
       error: (error) => {
-        this.error = 'Email hoặc mật khẩu không đúng';
+        this.error = 'Tên đăng nhập hoặc mật khẩu không đúng';
         this.loading = false;
       }
     });

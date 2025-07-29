@@ -4,6 +4,22 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { User } from '../models/user.model';
 
+interface LoginResponse {
+  token: string;
+  type: string;
+  userId: number;
+  username: string;
+  email: string;
+  role: string;
+  expiresIn: number;
+}
+
+interface RegisterRequest {
+  username: string;
+  email: string;
+  password: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -13,28 +29,71 @@ export class AuthService {
   public currentUser$ = this.currentUserSubject.asObservable();
 
   constructor(private http: HttpClient) {
-    // Load user from localStorage on init
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser) {
-      this.currentUserSubject.next(JSON.parse(storedUser));
+    this.loadUserFromStorage();
+  }
+
+  private loadUserFromStorage(): void {
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('currentUser');
+
+    if (token && userData) {
+      try {
+        const user = JSON.parse(userData);
+        this.currentUserSubject.next(user);
+      } catch (error) {
+        this.logout();
+      }
     }
   }
 
-  login(email: string, password: string): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/login`, { email, password })
+  login(username: string, password: string): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.baseUrl}/login`, {
+      username,
+      password
+    }).pipe(
+      tap(response => {
+        if (response.token) {
+          localStorage.setItem('token', response.token);
+
+          const user: User = {
+            id: response.userId,
+            username: response.username,
+            email: response.email,
+            role: response.role as 'USER' | 'ADMIN',
+            createdAt: new Date().toISOString() // Fallback
+          };
+
+          localStorage.setItem('currentUser', JSON.stringify(user));
+          this.currentUserSubject.next(user);
+        }
+      })
+    );
+  }
+
+  register(userData: RegisterRequest): Observable<User> {
+    return this.http.post<User>(`${this.baseUrl}/register`, userData);
+  }
+
+  refreshToken(): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.baseUrl}/refresh`, {})
       .pipe(
         tap(response => {
           if (response.token) {
             localStorage.setItem('token', response.token);
-            localStorage.setItem('currentUser', JSON.stringify(response.user));
-            this.currentUserSubject.next(response.user);
+
+            const user: User = {
+              id: response.userId,
+              username: response.username,
+              email: response.email,
+              role: response.role as 'USER' | 'ADMIN',
+              createdAt: new Date().toISOString()
+            };
+
+            localStorage.setItem('currentUser', JSON.stringify(user));
+            this.currentUserSubject.next(user);
           }
         })
       );
-  }
-
-  register(userData: any): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/register`, userData);
   }
 
   logout(): void {
@@ -48,7 +107,16 @@ export class AuthService {
   }
 
   isLoggedIn(): boolean {
-    return !!localStorage.getItem('token');
+    const token = localStorage.getItem('token');
+    if (!token) return false;
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const now = Date.now() / 1000;
+      return payload.exp > now;
+    } catch {
+      return false;
+    }
   }
 
   isAdmin(): boolean {
