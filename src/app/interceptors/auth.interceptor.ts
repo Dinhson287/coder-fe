@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { HttpInterceptor, HttpRequest, HttpHandler, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
@@ -9,22 +10,26 @@ import { throwError } from 'rxjs';
 export class AuthInterceptor implements HttpInterceptor {
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler) {
-    const token = this.authService.getToken();
-
     let authRequest = req;
-    if (token) {
-      authRequest = req.clone({
-        headers: req.headers.set('Authorization', `Bearer ${token}`)
-      });
+
+    if (isPlatformBrowser(this.platformId)) {
+      const token = this.authService.getToken();
+
+      if (token) {
+        authRequest = req.clone({
+          headers: req.headers.set('Authorization', `Bearer ${token}`)
+        });
+      }
     }
 
     return next.handle(authRequest).pipe(
       catchError((error: HttpErrorResponse) => {
-        if (error.status === 401) {
+        if (error.status === 401 && isPlatformBrowser(this.platformId)) {
           this.authService.logout();
           this.router.navigate(['/login']);
         }

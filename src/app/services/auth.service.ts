@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -28,11 +29,18 @@ export class AuthService {
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
 
-  constructor(private http: HttpClient) {
-    this.loadUserFromStorage();
+  constructor(
+    private http: HttpClient,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {
+    if (isPlatformBrowser(this.platformId)) {
+      this.loadUserFromStorage();
+    }
   }
 
   private loadUserFromStorage(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('currentUser');
 
@@ -52,7 +60,7 @@ export class AuthService {
       password
     }).pipe(
       tap(response => {
-        if (response.token) {
+        if (response.token && isPlatformBrowser(this.platformId)) {
           localStorage.setItem('token', response.token);
 
           const user: User = {
@@ -60,7 +68,7 @@ export class AuthService {
             username: response.username,
             email: response.email,
             role: response.role as 'USER' | 'ADMIN',
-            createdAt: new Date().toISOString() // Fallback
+            createdAt: new Date().toISOString()
           };
 
           localStorage.setItem('currentUser', JSON.stringify(user));
@@ -78,7 +86,7 @@ export class AuthService {
     return this.http.post<LoginResponse>(`${this.baseUrl}/refresh`, {})
       .pipe(
         tap(response => {
-          if (response.token) {
+          if (response.token && isPlatformBrowser(this.platformId)) {
             localStorage.setItem('token', response.token);
 
             const user: User = {
@@ -97,8 +105,10 @@ export class AuthService {
   }
 
   logout(): void {
-    localStorage.removeItem('token');
-    localStorage.removeItem('currentUser');
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('currentUser');
+    }
     this.currentUserSubject.next(null);
   }
 
@@ -107,6 +117,8 @@ export class AuthService {
   }
 
   isLoggedIn(): boolean {
+    if (!isPlatformBrowser(this.platformId)) return false;
+
     const token = localStorage.getItem('token');
     if (!token) return false;
 
@@ -125,6 +137,7 @@ export class AuthService {
   }
 
   getToken(): string | null {
+    if (!isPlatformBrowser(this.platformId)) return null;
     return localStorage.getItem('token');
   }
 }
