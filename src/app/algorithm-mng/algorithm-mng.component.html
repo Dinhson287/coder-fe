@@ -95,7 +95,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">{{ showAddModal ? 'Thêm bài tập mới' : 'Chỉnh sửa bài tập' }}</h5>
-        <button type="button" class="btn-close" (click)="showAddModal = false; showEditModal = false"></button>
+        <button type="button" class="btn-close" (click)="closeAddModal(); closeEditModal()"></button>
       </div>
       <div class="modal-body">
         <form>
@@ -179,7 +179,7 @@
         </form>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="showAddModal = false; showEditModal = false">
+        <button type="button" class="btn btn-secondary" (click)="closeAddModal(); closeEditModal()">
           Hủy
         </button>
         <button type="button" class="btn btn-primary" (click)="saveExercise()">

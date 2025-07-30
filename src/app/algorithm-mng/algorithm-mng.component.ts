@@ -110,40 +110,50 @@ export class AlgorithmMngComponent implements OnInit {
   }
 
   openEditModal(exercise: Exercise) {
-    this.currentExercise = { ...exercise };
+
+    // Deep copy để tránh ảnh hưởng đến object gốc
+    this.currentExercise = {
+      id: exercise.id,
+      title: exercise.title,
+      description: exercise.description,
+      difficulty: exercise.difficulty,
+      sampleInput: exercise.sampleInput,
+      sampleOutput: exercise.sampleOutput,
+      topics: exercise.topics || '',
+      createdAt: exercise.createdAt
+    };
+
+    console.log('Copied currentExercise:', this.currentExercise);
+
+    // Parse topics từ string thành array
     this.currentTopicsList = ExerciseUtils.getTopicsList(exercise);
     this.currentTopicInput = '';
 
-    console.log('Opening edit modal for exercise:', exercise); // Debug log
-    console.log('Topics list:', this.currentTopicsList); // Debug log
-    console.log('Current exercise topics:', this.currentExercise.topics); // Debug log
+    console.log('Parsed topics list:', this.currentTopicsList);
+    console.log('Current exercise topics after copy:', this.currentExercise.topics);
 
     this.showEditModal = true;
   }
 
   addTopic() {
     const topic = this.currentTopicInput.trim();
-    if (topic && !this.currentTopicsList.includes(topic)) {
-      this.currentTopicsList.push(topic);
-      this.currentTopicInput = '';
-      this.updateTopicsString();
-    }
+    this.currentTopicsList.push(topic);
+    this.currentTopicInput = '';
+    this.updateTopicsString();
   }
 
   removeTopic(index: number) {
+
     this.currentTopicsList.splice(index, 1);
     this.updateTopicsString();
   }
 
   addExistingTopic(topic: string) {
-    if (!this.currentTopicsList.includes(topic)) {
-      this.currentTopicsList.push(topic);
-      this.updateTopicsString();
-    }
+    this.currentTopicsList.push(topic);
+    this.updateTopicsString();
   }
 
   private updateTopicsString() {
-    // Cập nhật trực tiếp vào currentExercise.topics
     if (this.currentTopicsList.length === 0) {
       this.currentExercise.topics = '';
     } else {
@@ -155,38 +165,64 @@ export class AlgorithmMngComponent implements OnInit {
   }
 
   saveExercise() {
-    // Đảm bảo topics được cập nhật trước khi lưu
     this.updateTopicsString();
 
-    console.log('Saving exercise with topics:', this.currentExercise.topics); // Debug log
+
+    const exerciseData = {
+      id: this.currentExercise.id,
+      title: this.currentExercise.title,
+      description: this.currentExercise.description,
+      difficulty: this.currentExercise.difficulty,
+      sampleInput: this.currentExercise.sampleInput,
+      sampleOutput: this.currentExercise.sampleOutput,
+      topics: this.currentExercise.topics,
+      createdAt: this.currentExercise.createdAt
+    };
+
 
     if (this.currentExercise.id) {
-      this.apiService.updateExercise(this.currentExercise.id, this.currentExercise).subscribe({
+      this.apiService.updateExercise(this.currentExercise.id, exerciseData).subscribe({
         next: (response) => {
-          console.log('Exercise updated successfully:', response); // Debug log
           this.loadExercises();
-          this.loadTopics(); // Reload topics in case new ones were added
+          this.loadTopics();
           this.showEditModal = false;
         },
         error: (error) => {
-          console.error('Error updating exercise:', error); // Debug log
+          console.error('Error updating exercise:', error);
+          console.error('Error details:', error.error);
           alert('Không thể cập nhật bài tập: ' + (error.error?.message || error.message));
         }
       });
     } else {
-      this.apiService.createExercise(this.currentExercise).subscribe({
+      this.apiService.createExercise(exerciseData).subscribe({
         next: (response) => {
-          console.log('Exercise created successfully:', response); // Debug log
           this.loadExercises();
-          this.loadTopics(); // Reload topics in case new ones were added
+          this.loadTopics();
           this.showAddModal = false;
         },
         error: (error) => {
-          console.error('Error creating exercise:', error); // Debug log
+          console.error('Error creating exercise:', error);
+          console.error('Error details:', error.error);
           alert('Không thể tạo bài tập mới: ' + (error.error?.message || error.message));
         }
       });
     }
+  }
+
+  closeAddModal() {
+    this.showAddModal = false;
+    this.resetForm();
+  }
+
+  closeEditModal() {
+    this.showEditModal = false;
+    this.resetForm();
+  }
+
+  resetForm() {
+    this.currentExercise = {};
+    this.currentTopicsList = [];
+    this.currentTopicInput = '';
   }
 
   deleteExercise(id: number) {
