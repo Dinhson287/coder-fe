@@ -12,6 +12,5 @@ export interface Submission {
   stderr?: string;
   compileOutput?: string;
   time?: number;
-  memory?: number;
   createdAt: string;
 }

@@ -15,6 +15,7 @@ export class ApiService {
 
   constructor(private http: HttpClient) {}
 
+  // Exercise APIs
   getExercises(): Observable<Exercise[]> {
     return this.http.get<Exercise[]>(`${this.baseUrl}/exercises`);
   }
@@ -35,8 +36,24 @@ export class ApiService {
     return this.http.delete<void>(`${this.baseUrl}/exercises/${id}`);
   }
 
-  createSubmission(submission: SubmissionCreate): Observable<Submission> {
-    return this.http.post<Submission>(`${this.baseUrl}/submissions`, submission);
+  // Submission APIs
+createSubmission(submissionData: any): Observable<Submission> {
+    return this.http.post<Submission>(`${this.baseUrl}/submissions`, submissionData);
+  }
+
+  saveSubmissionResult(submissionData: {
+    exerciseId: number;
+    languageId: number;
+    sourceCode: string;
+    userId: number;
+    status: string;
+    stdout?: string;
+    stderr?: string;
+    compileOutput?: string;
+    time?: number;
+    memory?: number;
+  }): Observable<Submission> {
+    return this.http.post<Submission>(`${this.baseUrl}/submissions/save-result`, submissionData);
   }
 
   getSubmissionById(id: number): Observable<Submission> {
@@ -97,7 +114,7 @@ export class ApiService {
     return this.http.get<Language[]>(`${this.baseUrl}/languages`);
   }
 
-  // User API - Vẫn cần authentication
+  // User API
   getUsers(): Observable<User[]> {
     return this.http.get<User[]>(`${this.baseUrl}/user`);
   }

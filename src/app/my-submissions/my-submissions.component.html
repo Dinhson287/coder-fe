@@ -16,7 +16,6 @@
               <th>Ngôn ngữ</th>
               <th>Trạng thái</th>
               <th>Thời gian thực thi</th>
-              <th>Bộ nhớ</th>
               <th>Thời gian nộp</th>
               <th>Hành động</th>
             </tr>
@@ -36,7 +35,6 @@
                 </span>
               </td>
               <td>{{ submission.time ? submission.time + 's' : '-' }}</td>
-              <td>{{ submission.memory ? submission.memory + 'KB' : '-' }}</td>
               <td>{{ formatDate(submission.createdAt) }}</td>
               <td>
                 <button class="btn btn-sm btn-outline-info" (click)="viewDetails(submission)">
