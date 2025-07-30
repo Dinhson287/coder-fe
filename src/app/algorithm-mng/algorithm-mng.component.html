@@ -4,16 +4,38 @@
     <button class="btn btn-primary" (click)="openAddModal()">+ Thêm bài tập</button>
   </div>
 
-  <div class="input-group mb-3">
-    <input
-      type="text"
-      class="form-control"
-      placeholder="Tìm bài tập theo tên..."
-      [(ngModel)]="searchTerm"
-      (input)="searchExercises()">
-    <button class="btn btn-outline-primary" type="button" (click)="searchExercises()">
-      Tìm kiếm
-    </button>
+  <!-- Search and Filter Section -->
+  <div class="row mb-3">
+    <div class="col-md-6">
+      <div class="input-group">
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Tìm bài tập theo tên hoặc chủ đề..."
+          [(ngModel)]="searchTerm"
+          (input)="searchExercises()">
+        <button class="btn btn-outline-primary" type="button" (click)="searchExercises()">
+          Tìm kiếm
+        </button>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <select class="form-select" [(ngModel)]="selectedTopic" (change)="searchExercises()">
+        <option value="">Tất cả chủ đề</option>
+        <option *ngFor="let topic of availableTopics" [value]="topic">{{ topic }}</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <select class="form-select" [(ngModel)]="selectedDifficulty" (change)="searchExercises()">
+        <option value="">Tất cả độ khó</option>
+        <option value="EASY">Dễ</option>
+        <option value="MEDIUM">Trung bình</option>
+        <option value="HARD">Khó</option>
+      </select>
+    </div>
+    <div class="col-md-1">
+      <button class="btn btn-outline-secondary" (click)="clearFilters()">Xóa</button>
+    </div>
   </div>
 
   <div *ngIf="loading" class="text-center">
@@ -27,6 +49,7 @@
       <tr>
         <th>#</th>
         <th>Tiêu đề</th>
+        <th>Chủ đề</th>
         <th>Độ khó</th>
         <th>Ngày tạo</th>
         <th>Hành động</th>
@@ -36,6 +59,17 @@
       <tr *ngFor="let exercise of filteredExercises">
         <td>{{ exercise.id }}</td>
         <td>{{ exercise.title }}</td>
+        <td>
+          <div *ngIf="getTopicsList(exercise).length > 0; else noTopics">
+            <span *ngFor="let topic of getTopicsList(exercise); let i = index"
+                  class="badge bg-info text-dark me-1 mb-1">
+              {{ topic }}
+            </span>
+          </div>
+          <ng-template #noTopics>
+            <span class="text-muted">Chưa phân loại</span>
+          </ng-template>
+        </td>
         <td>
           <span class="badge" [ngClass]="getDifficultyClass(exercise.difficulty)">
             {{ getDifficultyText(exercise.difficulty) }}
@@ -75,13 +109,62 @@
             <textarea class="form-control" id="description" rows="4" [(ngModel)]="currentExercise.description" name="description" required></textarea>
           </div>
 
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="difficulty" class="form-label">Độ khó</label>
+              <select class="form-select" id="difficulty" [(ngModel)]="currentExercise.difficulty" name="difficulty" required>
+                <option value="EASY">Dễ</option>
+                <option value="MEDIUM">Trung bình</option>
+                <option value="HARD">Khó</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Topics Management -->
           <div class="mb-3">
-            <label for="difficulty" class="form-label">Độ khó</label>
-            <select class="form-select" id="difficulty" [(ngModel)]="currentExercise.difficulty" name="difficulty" required>
-              <option value="EASY">Dễ</option>
-              <option value="MEDIUM">Trung bình</option>
-              <option value="HARD">Khó</option>
-            </select>
+            <label class="form-label">Chủ đề</label>
+
+            <!-- Hidden input để đảm bảo topics được gửi -->
+            <input type="hidden" [(ngModel)]="currentExercise.topics" name="topics">
+
+            <!-- Current Topics -->
+            <div class="mb-2" *ngIf="currentTopicsList.length > 0">
+              <span *ngFor="let topic of currentTopicsList; let i = index"
+                    class="badge bg-info text-dark me-1 mb-1">
+                {{ topic }}
+                <button type="button" class="btn-close btn-close-white ms-1"
+                        style="font-size: 0.7em;" (click)="removeTopic(i)"></button>
+              </span>
+            </div>
+
+            <!-- Add New Topic -->
+            <div class="input-group mb-2">
+              <input type="text" class="form-control"
+                     placeholder="Nhập chủ đề mới..."
+                     [(ngModel)]="currentTopicInput"
+                     name="topicInput"
+                     (keyup.enter)="addTopic()">
+              <button class="btn btn-outline-primary" type="button" (click)="addTopic()">
+                Thêm
+              </button>
+            </div>
+
+            <!-- Existing Topics -->
+            <div *ngIf="availableTopics.length > 0">
+              <small class="text-muted">Chủ đề có sẵn:</small>
+              <div class="mt-1">
+                <button *ngFor="let topic of availableTopics"
+                        type="button"
+                        class="btn btn-sm btn-outline-secondary me-1 mb-1"
+                        [disabled]="currentTopicsList.includes(topic)"
+                        (click)="addExistingTopic(topic)">
+                  {{ topic }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Debug info - remove this after testing -->
+            <small class="text-muted">Debug: {{ currentExercise.topics || 'empty' }}</small>
           </div>
 
           <div class="mb-3">

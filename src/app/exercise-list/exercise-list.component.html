@@ -1,6 +1,52 @@
 <div class="container mt-4">
   <h2>Danh sách bài tập</h2>
 
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <div class="input-group">
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Tìm bài tập theo tên, mô tả hoặc chủ đề..."
+          [(ngModel)]="searchTerm"
+          (input)="applyFilters()">
+        <button class="btn btn-outline-primary" type="button" (click)="applyFilters()">
+          Tìm kiếm
+        </button>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <select class="form-select" [(ngModel)]="selectedTopic" (change)="applyFilters()">
+        <option value="">Tất cả chủ đề</option>
+        <option *ngFor="let topic of availableTopics" [value]="topic">{{ topic }}</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <select class="form-select" [(ngModel)]="selectedDifficulty" (change)="applyFilters()">
+        <option value="">Tất cả độ khó</option>
+        <option value="EASY">Dễ</option>
+        <option value="MEDIUM">Trung bình</option>
+        <option value="HARD">Khó</option>
+      </select>
+    </div>
+    <div class="col-md-1">
+      <button class="btn btn-outline-secondary" (click)="clearFilters()">Xóa</button>
+    </div>
+  </div>
+
+  <div class="mb-4" *ngIf="availableTopics.length > 0">
+    <h6>Chủ đề phổ biến:</h6>
+    <div>
+      <button *ngFor="let topic of availableTopics.slice(0, 8)"
+              type="button"
+              class="btn btn-sm me-2 mb-2"
+              [class]="selectedTopic === topic ? 'btn-primary' : 'btn-outline-primary'"
+              (click)="filterByTopic(topic)">
+        {{ topic }}
+      </button>
+    </div>
+  </div>
+
   <div *ngIf="loading" class="text-center">
     <div class="spinner-border" role="status">
       <span class="visually-hidden">Loading...</span>
@@ -9,18 +55,54 @@
 
   <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
 
-  <div class="card mb-3" *ngFor="let exercise of exercises">
-    <div class="card-body">
-      <h5 class="card-title">{{ exercise.title }}</h5>
-      <p class="card-text">{{ exercise.description }}</p>
-      <div class="d-flex justify-content-between align-items-center">
-        <span class="badge" [ngClass]="getDifficultyClass(exercise.difficulty)">
-          {{ getDifficultyText(exercise.difficulty) }}
-        </span>
-        <button class="btn btn-sm btn-success" (click)="viewExercise(exercise.id)">
-          Làm bài
-        </button>
+  <div class="mb-3" *ngIf="!loading && !error">
+    <small class="text-muted">
+      Hiển thị {{ filteredExercises.length }} / {{ exercises.length }} bài tập
+      <span *ngIf="searchTerm || selectedTopic || selectedDifficulty">
+        (đã lọc)
+      </span>
+    </small>
+  </div>
+
+  <div class="row">
+    <div class="col-12" *ngFor="let exercise of filteredExercises">
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-8">
+              <h5 class="card-title">{{ exercise.title }}</h5>
+              <p class="card-text">{{ exercise.description | slice:0:150 }}{{ exercise.description.length > 150 ? '...' : '' }}</p>
+
+              <div class="mb-2" *ngIf="getTopicsList(exercise).length > 0">
+                <small class="text-muted">Chủ đề: </small>
+                <span *ngFor="let topic of getTopicsList(exercise); let i = index"
+                      class="badge bg-info text-dark me-1">
+                  {{ topic }}
+                </span>
+              </div>
+            </div>
+            <div class="col-md-4 text-end">
+              <div class="mb-2">
+                <span class="badge" [ngClass]="getDifficultyClass(exercise.difficulty)">
+                  {{ getDifficultyText(exercise.difficulty) }}
+                </span>
+              </div>
+              <button class="btn btn-success" (click)="viewExercise(exercise.id)">
+                Làm bài
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
+    </div>
+  </div>
+
+  <div *ngIf="!loading && !error && filteredExercises.length === 0" class="text-center py-5">
+    <div class="text-muted">
+      <i class="fas fa-search fa-3x mb-3"></i>
+      <h5>Không tìm thấy bài tập nào</h5>
+      <p>Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc</p>
+      <button class="btn btn-primary" (click)="clearFilters()">Xem tất cả bài tập</button>
     </div>
   </div>
 </div>

@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../services/api.service';
-import { Exercise } from '../models/exercise.model';
+import { Exercise, ExerciseUtils } from '../models/exercise.model';
 
 @Component({
   selector: 'app-home',
@@ -13,31 +13,36 @@ import { Exercise } from '../models/exercise.model';
 })
 export class HomeComponent implements OnInit {
   problems: Exercise[] = [];
-  topCoders = [
-    { name: 'Hoàng Thu Phương', points: 2300 },
-    { name: 'Dinh Phuc Son', points: 1900 },
-    { name: 'Nguyễn Minh Huy', points: 1700 },
-  ];
+  availableTopics: string[] = [];
 
   constructor(private apiService: ApiService) {}
 
   ngOnInit() {
     this.loadFeaturedProblems();
+    this.loadTopics();
   }
 
   loadFeaturedProblems() {
     this.apiService.getExercises().subscribe({
       next: (exercises) => {
-        // Take first 3 exercises as featured
         this.problems = exercises.slice(0, 3);
       },
       error: (error) => {
         console.error('Error loading exercises:', error);
-        // Fallback to static data
-        this.problems = [
-          { id: 1, title: 'Tính tổng dãy số', difficulty: 'EASY' } as Exercise,
-          { id: 2, title: 'Duyệt đồ thị BFS', difficulty: 'MEDIUM' } as Exercise,
-          { id: 3, title: 'Quy hoạch động bài toán ba lô', difficulty: 'HARD' } as Exercise,
+      }
+    });
+  }
+
+  loadTopics() {
+    this.apiService.getAllTopics().subscribe({
+      next: (topics) => {
+        this.availableTopics = topics.slice(0, 8);
+      },
+      error: (error) => {
+        console.error('Error loading topics:', error);
+        this.availableTopics = [
+          'Sorting', 'Graph', 'Dynamic Programming', 'String',
+          'Number Theory', 'Greedy', 'Tree', 'Array'
         ];
       }
     });
@@ -59,5 +64,13 @@ export class HomeComponent implements OnInit {
       case 'HARD': return 'Khó';
       default: return difficulty;
     }
+  }
+
+  getTopicsList(exercise: Exercise): string[] {
+    return ExerciseUtils.getTopicsList(exercise);
+  }
+
+  formatTopics(exercise: Exercise): string {
+    return ExerciseUtils.formatTopicsDisplay(exercise);
   }
 }

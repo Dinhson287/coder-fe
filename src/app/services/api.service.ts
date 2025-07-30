@@ -36,6 +36,24 @@ export class ApiService {
     return this.http.delete<void>(`${this.baseUrl}/exercises/${id}`);
   }
 
+  // Topics APIs
+  getExercisesByTopic(topic: string): Observable<Exercise[]> {
+    return this.http.get<Exercise[]>(`${this.baseUrl}/exercises/topic/${encodeURIComponent(topic)}`);
+  }
+
+  getExercisesByTopicAndDifficulty(topic: string, difficulty: string): Observable<Exercise[]> {
+    return this.http.get<Exercise[]>(`${this.baseUrl}/exercises/topic/${encodeURIComponent(topic)}/difficulty/${difficulty}`);
+  }
+
+  getAllTopics(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.baseUrl}/exercises/topics`);
+  }
+
+  searchExercises(keyword: string): Observable<Exercise[]> {
+    const params = new HttpParams().set('keyword', keyword);
+    return this.http.get<Exercise[]>(`${this.baseUrl}/exercises/search/all`, { params });
+  }
+
   // Submission APIs
 createSubmission(submissionData: any): Observable<Submission> {
     return this.http.post<Submission>(`${this.baseUrl}/submissions`, submissionData);
