@@ -49,10 +49,10 @@ import { CodeExecutionService } from '../services/code-execution.service';
           <h6>Code Editor</h6>
           <div class="d-flex align-items-center">
             <label class="me-2">Ngôn ngữ:</label>
-            <select class="form-select w-auto" [(ngModel)]="selectedLanguageId">
+            <select class="form-select w-auto" [(ngModel)]="selectedLanguageId" (ngModelChange)="onLanguageChange($event)">
               <option [value]="null" disabled>Chọn ngôn ngữ</option>
               <option *ngFor="let lang of languages" [value]="lang.id">
-                {{ lang.name }} (Judge0: {{ lang.code }})
+                {{ lang.name }} ({{ lang.code }})
               </option>
             </select>
           </div>
@@ -63,10 +63,6 @@ import { CodeExecutionService } from '../services/code-execution.service';
         <div class="card-footer">
           <div class="d-flex justify-content-between align-items-center">
             <div>
-              <small class="text-muted" *ngIf="selectedLanguageId">
-                Selected Language ID: {{ selectedLanguageId }}
-                <span *ngIf="getSelectedLanguage()"> | Judge0 Code: {{ getSelectedLanguage()!.code }}</span>
-              </small>
             </div>
             <button
               class="btn btn-primary"
@@ -265,16 +261,19 @@ export class CodeRunnerComponent implements OnInit {
     this.apiService.getLanguages().subscribe({
       next: (languages) => {
         this.languages = languages;
-        // TỰ ĐỘNG CHỌN PYTHON LÀM DEFAULT NẾU CÓ
+        console.log('Languages loaded:', languages);
+
         const pythonLang = languages.find(lang => lang.name.toLowerCase().includes('python'));
         if (pythonLang) {
           this.selectedLanguageId = pythonLang.id;
+          console.log('Auto-selected Python:', pythonLang);
         } else if (languages.length > 0) {
-          // Nếu không có Python, chọn language đầu tiên
           this.selectedLanguageId = languages[0].id;
+          console.log('Auto-selected first language:', languages[0]);
         }
-        console.log('Languages loaded:', languages);
+
         console.log('Selected language ID:', this.selectedLanguageId);
+        console.log('Selected language object:', this.getSelectedLanguage());
       },
       error: (error) => {
         console.error('Error loading languages:', error);
@@ -283,7 +282,18 @@ export class CodeRunnerComponent implements OnInit {
     });
   }
 
+  onLanguageChange(languageId: number | null) {
+    console.log('Language changed to:', languageId);
+    console.log('Selected language object:', this.getSelectedLanguage());
+  }
+
   async submitCode() {
+    console.log('=== SUBMIT CODE DEBUG ===');
+    console.log('Exercise ID:', this.exerciseId);
+    console.log('Selected Language ID:', this.selectedLanguageId);
+    console.log('Selected Language ID type:', typeof this.selectedLanguageId);
+    console.log('Available languages:', this.languages);
+
     if (!this.exerciseId) {
       alert('Không tìm thấy bài tập');
       return;
@@ -307,6 +317,17 @@ export class CodeRunnerComponent implements OnInit {
       return;
     }
 
+    const selectedLanguage = this.getSelectedLanguage();
+    console.log('Selected language object:', selectedLanguage);
+
+    if (!selectedLanguage) {
+      console.error('Cannot find selected language');
+      console.log('Looking for ID:', this.selectedLanguageId);
+      console.log('In languages array:', this.languages.map(l => ({ id: l.id, name: l.name, idType: typeof l.id })));
+      alert('Không tìm thấy ngôn ngữ được chọn. Vui lòng chọn lại ngôn ngữ.');
+      return;
+    }
+
     const code = this.codeEditor.getCode();
     if (!code.trim()) {
       alert('Vui lòng nhập code');
@@ -317,7 +338,7 @@ export class CodeRunnerComponent implements OnInit {
     this.testResult = null;
 
     try {
-      // Bước 1: Tạo submission trong database với trạng thái PENDING
+
       const submissionData = {
         userId: currentUser.id,
         exerciseId: this.exerciseId,
@@ -327,7 +348,6 @@ export class CodeRunnerComponent implements OnInit {
 
       console.log('Creating submission:', submissionData);
 
-      // Tạo submission trong database
       const createdSubmission = await this.apiService.createSubmission(submissionData).toPromise();
       console.log('Submission created:', createdSubmission);
 
@@ -335,21 +355,15 @@ export class CodeRunnerComponent implements OnInit {
         throw new Error('Không thể tạo submission');
       }
 
-      // Cập nhật UI với submission mới tạo
       this.latestSubmission = createdSubmission;
       this.loadSubmissions();
 
-      // Bước 2: Gửi code tới Judge0 để thực thi
-      const selectedLanguage = this.getSelectedLanguage();
-      if (!selectedLanguage) {
-        throw new Error('Không tìm thấy ngôn ngữ được chọn');
-      }
-
       console.log('Executing code with Judge0...');
+      console.log('Using language code:', selectedLanguage.code);
+
       const judge0Result = await this.codeExecution.submitCode(code, selectedLanguage.code).toPromise();
       console.log('Judge0 result:', judge0Result);
 
-      // Bước 3: Cập nhật submission với kết quả từ Judge0
       const updateData = {
         stdout: judge0Result.stdout || '',
         stderr: judge0Result.stderr || '',
@@ -361,17 +375,14 @@ export class CodeRunnerComponent implements OnInit {
 
       console.log('Updating submission with:', updateData);
 
-      // Cập nhật submission trong database
       const updatedSubmission = await this.apiService.updateSubmissionResult(createdSubmission.id!, updateData).toPromise();
       console.log('Submission updated:', updatedSubmission);
 
       if (updatedSubmission) {
         this.latestSubmission = updatedSubmission;
 
-        // Thực hiện so sánh kết quả
         this.compareResults(updatedSubmission);
 
-        // Reload lại danh sách submissions
         this.loadSubmissions();
       }
 
@@ -380,7 +391,6 @@ export class CodeRunnerComponent implements OnInit {
     } catch (error: any) {
       console.error('Submit error:', error);
 
-      // Nếu đã tạo submission nhưng lỗi khi execute, cập nhật trạng thái ERROR
       if (this.latestSubmission?.id) {
         const errorUpdateData = {
           status: 'ERROR',
@@ -413,22 +423,17 @@ export class CodeRunnerComponent implements OnInit {
   }
 
   private determineStatus(judge0Result: any): string {
-    // Nếu có compile error
     if (judge0Result.compile_output && judge0Result.compile_output.trim()) {
       return 'ERROR';
     }
 
-    // Nếu có runtime error
     if (judge0Result.stderr && judge0Result.stderr.trim()) {
       return 'ERROR';
     }
 
-    // Nếu có output thì coi như thành công (sẽ được kiểm tra lại ở compareResults)
     if (judge0Result.stdout && judge0Result.stdout.trim()) {
       return 'SUCCESS';
     }
-
-    // Mặc định là FAIL nếu không có output
     return 'FAIL';
   }
 
@@ -443,7 +448,6 @@ export class CodeRunnerComponent implements OnInit {
       return;
     }
 
-    // Lấy output thực tế từ submission
     const actualOutput = (submission.stdout || '').trim();
     let expectedOutput = '';
     let passed = false;
@@ -452,17 +456,14 @@ export class CodeRunnerComponent implements OnInit {
       expectedOutput = this.exercise.sampleOutput.trim();
       passed = actualOutput === expectedOutput;
     } else {
-      // Nếu không có sampleOutput, coi như passed nếu có stdout và không có lỗi
       passed = !!actualOutput && !submission.stderr && !submission.compileOutput;
       expectedOutput = 'Không có output mẫu để so sánh';
     }
 
-    // Nếu có compile error hoặc runtime error thì không pass
     if (submission.stderr || submission.compileOutput) {
       passed = false;
     }
 
-    // Cập nhật testResult
     this.testResult = {
       passed: passed,
       actualOutput: actualOutput,
@@ -472,10 +473,8 @@ export class CodeRunnerComponent implements OnInit {
         : 'Sai! Output không khớp với kết quả mong đợi.'
     };
 
-    // Cập nhật trạng thái cuối cùng dựa trên kết quả so sánh
     const finalStatus = passed ? 'SUCCESS' : 'FAIL';
 
-    // Nếu trạng thái khác với dự đoán, cập nhật lại
     if (submission.status !== finalStatus && submission.id) {
       const updateData = { status: finalStatus };
       this.apiService.updateSubmissionResult(submission.id, updateData).subscribe({
@@ -494,7 +493,6 @@ export class CodeRunnerComponent implements OnInit {
 
   viewSubmissionDetails(submission: Submission) {
     this.selectedSubmissionDetail = submission;
-    // Nếu sử dụng Bootstrap modal
     const modal = new (window as any).bootstrap.Modal(document.getElementById('submissionModal'));
     modal.show();
   }
@@ -570,10 +568,18 @@ export class CodeRunnerComponent implements OnInit {
     return new Date(dateString).toLocaleString('vi-VN');
   }
 
-  // Helper methods cho template
   getSelectedLanguage(): Language | null {
-    if (!this.selectedLanguageId) return null;
-    return this.languages.find(lang => lang.id === this.selectedLanguageId) || null;
+    if (!this.selectedLanguageId || this.languages.length === 0) {
+      return null;
+    }
+
+    const selectedId = Number(this.selectedLanguageId);
+    const found = this.languages.find(lang => Number(lang.id) === selectedId);
+
+    console.log('Finding language with ID:', selectedId);
+    console.log('Found language:', found);
+
+    return found || null;
   }
 
   getSelectedLanguageCode(): number | null {

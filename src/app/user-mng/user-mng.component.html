@@ -32,8 +32,8 @@
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let user of filteredUsers">
-        <td>{{ user.id }}</td>
+      <tr *ngFor="let user of pagedUsers; let i = index">
+        <td>{{ (currentPage - 1) * pageSize + i + 1 }}</td>
         <td>{{ user.username }}</td>
         <td>{{ user.email }}</td>
         <td>
@@ -49,4 +49,16 @@
   <nav *ngIf="filteredUsers.length === 0 && !loading && !error">
     <p class="text-center text-muted">Không tìm thấy người dùng nào</p>
   </nav>
+
+  <div class="d-flex justify-content-center mt-4" *ngIf="!loading && !error && collectionSize > pageSize">
+  <ngb-pagination
+    [(page)]="currentPage"
+    [pageSize]="pageSize"
+    [collectionSize]="collectionSize"
+    (pageChange)="onPageChange($event)"
+    [maxSize]="5"
+    [rotate]="true"
+    [boundaryLinks]="true">
+  </ngb-pagination>
+</div>
 </div>

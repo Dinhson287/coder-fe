@@ -3,11 +3,12 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Exercise, ExerciseUtils } from '../models/exercise.model';
 import { ApiService } from '../services/api.service';
+import { NgbPaginationModule } from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
   selector: 'app-algorithm-mng',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NgbPaginationModule],
   templateUrl: './algorithm-mng.component.html',
   styleUrl: './algorithm-mng.component.scss'
 })
@@ -24,7 +25,14 @@ export class AlgorithmMngComponent implements OnInit {
   showEditModal = false;
   currentExercise: Partial<Exercise> = {};
 
-  // For topics management
+  allExercises: Exercise[] = [];
+
+  currentPage = 1;
+  pageSize = 10;
+  collectionSize = 0;
+
+
+
   currentTopicInput = '';
   currentTopicsList: string[] = [];
 
@@ -36,11 +44,22 @@ export class AlgorithmMngComponent implements OnInit {
   }
 
   loadExercises() {
+    this.loading = true;
     this.apiService.getExercises().subscribe({
-      next: (exercises) => {
-        this.exercises = exercises;
-        this.filteredExercises = exercises;
-        this.loading = false;
+      next: (allExercises) => {
+        this.allExercises = allExercises;
+        this.apiService.getExercisesPaged(this.currentPage - 1, this.pageSize).subscribe({
+          next: (response) => {
+            this.exercises = response.content;
+            this.filteredExercises = response.content;
+            this.collectionSize = response.totalElements;
+            this.loading = false;
+          },
+          error: (error) => {
+            this.error = 'Không thể tải danh sách bài tập';
+            this.loading = false;
+          }
+        });
       },
       error: (error) => {
         this.error = 'Không thể tải danh sách bài tập';
@@ -48,6 +67,12 @@ export class AlgorithmMngComponent implements OnInit {
       }
     });
   }
+
+  onPageChange(page: number) {
+  this.currentPage = page;
+  const startIndex = (page - 1) * this.pageSize;
+  this.filteredExercises = this.allExercises.slice(startIndex, startIndex + this.pageSize);
+}
 
   loadTopics() {
     this.apiService.getAllTopics().subscribe({
@@ -61,9 +86,8 @@ export class AlgorithmMngComponent implements OnInit {
   }
 
   searchExercises() {
-    let filtered = this.exercises;
+    let filtered = this.allExercises;
 
-    // Filter by search term
     if (this.searchTerm.trim()) {
       filtered = filtered.filter(ex =>
         ex.title.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
@@ -73,19 +97,22 @@ export class AlgorithmMngComponent implements OnInit {
       );
     }
 
-    // Filter by topic
     if (this.selectedTopic) {
       filtered = filtered.filter(ex =>
         ExerciseUtils.containsTopic(ex, this.selectedTopic)
       );
     }
 
-    // Filter by difficulty
     if (this.selectedDifficulty) {
-      filtered = filtered.filter(ex => ex.difficulty === this.selectedDifficulty);
+      filtered = filtered.filter(ex =>
+        ex.difficulty?.toLowerCase() === this.selectedDifficulty.toLowerCase()
+      );
     }
 
-    this.filteredExercises = filtered;
+    this.collectionSize = filtered.length;
+    this.currentPage = 1;
+
+    this.filteredExercises = filtered.slice(0, this.pageSize);
   }
 
   clearFilters() {
@@ -111,7 +138,6 @@ export class AlgorithmMngComponent implements OnInit {
 
   openEditModal(exercise: Exercise) {
 
-    // Deep copy để tránh ảnh hưởng đến object gốc
     this.currentExercise = {
       id: exercise.id,
       title: exercise.title,
@@ -125,7 +151,6 @@ export class AlgorithmMngComponent implements OnInit {
 
     console.log('Copied currentExercise:', this.currentExercise);
 
-    // Parse topics từ string thành array
     this.currentTopicsList = ExerciseUtils.getTopicsList(exercise);
     this.currentTopicInput = '';
 
@@ -230,7 +255,7 @@ export class AlgorithmMngComponent implements OnInit {
       this.apiService.deleteExercise(id).subscribe({
         next: () => {
           this.loadExercises();
-          this.loadTopics(); // Reload topics as the available topics might change
+          this.loadTopics();
         },
         error: (error) => {
           alert('Không thể xóa bài tập');
@@ -240,19 +265,21 @@ export class AlgorithmMngComponent implements OnInit {
   }
 
   getDifficultyClass(difficulty: string): string {
-    switch (difficulty) {
-      case 'EASY': return 'bg-success';
-      case 'MEDIUM': return 'bg-warning text-dark';
-      case 'HARD': return 'bg-danger';
+    const diff = difficulty?.toLowerCase();
+    switch (diff) {
+      case 'easy': return 'bg-success';
+      case 'medium': return 'bg-warning text-dark';
+      case 'hard': return 'bg-danger';
       default: return 'bg-secondary';
     }
   }
 
   getDifficultyText(difficulty: string): string {
-    switch (difficulty) {
-      case 'EASY': return 'Dễ';
-      case 'MEDIUM': return 'Trung bình';
-      case 'HARD': return 'Khó';
+    const diff = difficulty?.toLowerCase();
+    switch (diff) {
+      case 'easy': return 'Dễ';
+      case 'medium': return 'Trung bình';
+      case 'hard': return 'Khó';
       default: return difficulty;
     }
   }

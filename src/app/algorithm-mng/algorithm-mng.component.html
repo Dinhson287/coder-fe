@@ -4,7 +4,6 @@
     <button class="btn btn-primary" (click)="openAddModal()">+ Thêm bài tập</button>
   </div>
 
-  <!-- Search and Filter Section -->
   <div class="row mb-3">
     <div class="col-md-6">
       <div class="input-group">
@@ -28,11 +27,11 @@
     <div class="col-md-2">
       <select class="form-select" [(ngModel)]="selectedDifficulty" (change)="searchExercises()">
         <option value="">Tất cả độ khó</option>
-        <option value="EASY">Dễ</option>
-        <option value="MEDIUM">Trung bình</option>
-        <option value="HARD">Khó</option>
+        <option value="easy">Dễ</option>
+        <option value="medium">Trung bình</option>
+        <option value="hard">Khó</option>
       </select>
-    </div>
+</div>
     <div class="col-md-1">
       <button class="btn btn-outline-secondary" (click)="clearFilters()">Xóa</button>
     </div>
@@ -56,8 +55,8 @@
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let exercise of filteredExercises">
-        <td>{{ exercise.id }}</td>
+      <tr *ngFor="let exercise of filteredExercises; let i = index">
+        <td>{{ (currentPage - 1) * pageSize + i + 1 }}</td>
         <td>{{ exercise.title }}</td>
         <td>
           <div *ngIf="getTopicsList(exercise).length > 0; else noTopics">
@@ -87,9 +86,19 @@
       </tr>
     </tbody>
   </table>
+  <div class="d-flex justify-content-center mt-3" *ngIf="!loading && !error && collectionSize > pageSize">
+      <ngb-pagination
+        [(page)]="currentPage"
+        [pageSize]="pageSize"
+        [collectionSize]="collectionSize"
+        (pageChange)="onPageChange($event)"
+        [maxSize]="5"
+        [rotate]="true"
+        [boundaryLinks]="true">
+      </ngb-pagination>
+  </div>
 </div>
 
-<!-- Add/Edit Modal -->
 <div class="modal fade" [class.show]="showAddModal || showEditModal" [style.display]="(showAddModal || showEditModal) ? 'block' : 'none'" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -111,23 +120,20 @@
 
           <div class="row mb-3">
             <div class="col-md-6">
-              <label for="difficulty" class="form-label">Độ khó</label>
-              <select class="form-select" id="difficulty" [(ngModel)]="currentExercise.difficulty" name="difficulty" required>
-                <option value="EASY">Dễ</option>
-                <option value="MEDIUM">Trung bình</option>
-                <option value="HARD">Khó</option>
-              </select>
-            </div>
+          <label for="difficulty" class="form-label">Độ khó</label>
+          <select class="form-select" id="difficulty" [(ngModel)]="currentExercise.difficulty" name="difficulty" required>
+            <option value="easy">Dễ</option>
+            <option value="medium">Trung bình</option>
+            <option value="hard">Khó</option>
+          </select>
+          </div>
           </div>
 
-          <!-- Topics Management -->
           <div class="mb-3">
             <label class="form-label">Chủ đề</label>
 
-            <!-- Hidden input để đảm bảo topics được gửi -->
             <input type="hidden" [(ngModel)]="currentExercise.topics" name="topics">
 
-            <!-- Current Topics -->
             <div class="mb-2" *ngIf="currentTopicsList.length > 0">
               <span *ngFor="let topic of currentTopicsList; let i = index"
                     class="badge bg-info text-dark me-1 mb-1">
@@ -137,7 +143,6 @@
               </span>
             </div>
 
-            <!-- Add New Topic -->
             <div class="input-group mb-2">
               <input type="text" class="form-control"
                      placeholder="Nhập chủ đề mới..."
@@ -149,7 +154,6 @@
               </button>
             </div>
 
-            <!-- Existing Topics -->
             <div *ngIf="availableTopics.length > 0">
               <small class="text-muted">Chủ đề có sẵn:</small>
               <div class="mt-1">
@@ -163,8 +167,6 @@
               </div>
             </div>
 
-            <!-- Debug info - remove this after testing -->
-            <small class="text-muted">Debug: {{ currentExercise.topics || 'empty' }}</small>
           </div>
 
           <div class="mb-3">

@@ -7,7 +7,7 @@
         <input
           type="text"
           class="form-control"
-          placeholder="Tìm bài tập theo tên, mô tả hoặc chủ đề..."
+          placeholder="Tìm theo tên, mô tả, chủ đề..."
           [(ngModel)]="searchTerm"
           (input)="applyFilters()">
         <button class="btn btn-outline-primary" type="button" (click)="applyFilters()">
@@ -22,11 +22,13 @@
       </select>
     </div>
     <div class="col-md-2">
-      <select class="form-select" [(ngModel)]="selectedDifficulty" (change)="applyFilters()">
+      <select class="form-select"
+              [(ngModel)]="selectedDifficulty"
+              (change)="onDifficultyChange()">
         <option value="">Tất cả độ khó</option>
-        <option value="EASY">Dễ</option>
-        <option value="MEDIUM">Trung bình</option>
-        <option value="HARD">Khó</option>
+        <option value="easy">Dễ</option>
+        <option value="medium">Trung bình</option>
+        <option value="hard">Khó</option>
       </select>
     </div>
     <div class="col-md-1">
@@ -55,17 +57,18 @@
 
   <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
 
-  <div class="mb-3" *ngIf="!loading && !error">
-    <small class="text-muted">
-      Hiển thị {{ filteredExercises.length }} / {{ exercises.length }} bài tập
-      <span *ngIf="searchTerm || selectedTopic || selectedDifficulty">
-        (đã lọc)
-      </span>
-    </small>
-  </div>
+<div class="mb-3" *ngIf="!loading && !error">
+  <small class="text-muted">
+    Hiển thị {{ pagedExercises.length }} bài tập
+    (trang {{ currentPage }} / {{ totalPages() }})
+    <span *ngIf="searchTerm || selectedTopic || selectedDifficulty">
+      - Đã lọc từ {{ collectionSize }} bài tập phù hợp
+    </span>
+  </small>
+</div>
 
   <div class="row">
-    <div class="col-12" *ngFor="let exercise of filteredExercises">
+    <div class="col-12" *ngFor="let exercise of pagedExercises">
       <div class="card mb-3">
         <div class="card-body">
           <div class="row">
@@ -105,4 +108,15 @@
       <button class="btn btn-primary" (click)="clearFilters()">Xem tất cả bài tập</button>
     </div>
   </div>
+  <div class="d-flex justify-content-center mt-4" *ngIf="!loading && !error && collectionSize > pageSize">
+  <ngb-pagination
+    [(page)]="currentPage"
+    [pageSize]="pageSize"
+    [collectionSize]="collectionSize"
+    (pageChange)="onPageChange($event)"
+    [maxSize]="5"
+    [rotate]="true"
+    [boundaryLinks]="true">
+  </ngb-pagination>
+</div>
 </div>

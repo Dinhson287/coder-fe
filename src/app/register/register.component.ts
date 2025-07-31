@@ -29,7 +29,6 @@ export class RegisterComponent {
   onSubmit() {
     this.error = '';
 
-    // Validation
     if (!this.userData.username || !this.userData.email || !this.userData.password) {
       this.error = 'Vui lòng nhập đầy đủ thông tin';
       return;

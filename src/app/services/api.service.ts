@@ -36,6 +36,13 @@ export class ApiService {
     return this.http.delete<void>(`${this.baseUrl}/exercises/${id}`);
   }
 
+  getExercisesPaged(page: number = 0, size: number = 10): Observable<any> {
+    const params = new HttpParams()
+        .set('page', page.toString())
+        .set('size', size.toString());
+    return this.http.get<any>(`${this.baseUrl}/exercises/paged`, { params });
+}
+
   // Topics APIs
   getExercisesByTopic(topic: string): Observable<Exercise[]> {
     return this.http.get<Exercise[]>(`${this.baseUrl}/exercises/topic/${encodeURIComponent(topic)}`);
@@ -140,4 +147,11 @@ createSubmission(submissionData: any): Observable<Submission> {
   getCurrentUserProfile(): Observable<User> {
     return this.http.get<User>(`${this.baseUrl}/user/profile`);
   }
+
+  getUsersPaged(page: number = 0, size: number = 10): Observable<any> {
+  const params = new HttpParams()
+      .set('page', page.toString())
+      .set('size', size.toString());
+  return this.http.get<any>(`${this.baseUrl}/user/paged`, { params });
+}
 }

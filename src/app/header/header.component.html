@@ -1,6 +1,6 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
   <div class="container-fluid">
-    <a class="navbar-brand" routerLink="/home">CodePractice</a>
+    <a class="navbar-brand" routerLink="/home">Coder</a>
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown">
       <span class="navbar-toggler-icon"></span>
@@ -26,17 +26,8 @@
           </ul>
         </li>
 
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-            Bài tập
-          </a>
-          <ul class="dropdown-menu">
-            <li><a class="dropdown-item" routerLink="/exercises">Thuật toán cơ bản</a></li>
-            <li><a class="dropdown-item" routerLink="/exercises">Dynamic Programming</a></li>
-            <li><a class="dropdown-item" routerLink="/exercises">Graph</a></li>
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" routerLink="/exercises">Tất cả bài tập</a></li>
-          </ul>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/exercises" routerLinkActive="active">Bài tập</a>
         </li>
       </ul>
 
@@ -45,7 +36,7 @@
           <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
             {{ currentUser?.username }}
           </button>
-          <ul class="dropdown-menu">
+          <ul class="dropdown-menu dropdown-menu-end">
             <li><a class="dropdown-item" routerLink="/profile">Hồ sơ</a></li>
             <li><a class="dropdown-item" routerLink="/my-submissions">Bài nộp của tôi</a></li>
             <li><hr class="dropdown-divider"></li>

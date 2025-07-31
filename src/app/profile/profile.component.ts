@@ -54,7 +54,7 @@ export class ProfileComponent implements OnInit {
     if (currentUser) {
       this.apiService.getMySubmissions(currentUser.id).subscribe({
         next: (submissions) => {
-          this.submissions = submissions.slice(0, 10); // Latest 10
+          this.submissions = submissions.slice(0, 10);
           this.loading = false;
         },
         error: (error) => {
