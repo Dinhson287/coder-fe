@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../services/api.service';
 import { User } from '../models/user.model';
@@ -23,6 +23,10 @@ export class UserMngComponent implements OnInit {
   pageSize = 10;
   collectionSize = 0;
   pagedUsers: User[] = [];
+
+  userToDelete: User | null = null;
+  deletingUserId: number | null = null;
+  @ViewChild('deleteModal') deleteModalRef!: ElementRef;
 
   constructor(private apiService: ApiService) { }
 
@@ -70,6 +74,7 @@ export class UserMngComponent implements OnInit {
     this.currentPage = page;
     this.loadUsers();
   }
+
   totalPages(): number {
     return Math.ceil(this.collectionSize / this.pageSize);
   }
@@ -84,5 +89,69 @@ export class UserMngComponent implements OnInit {
 
   getRoleText(role: string): string {
     return role === 'ADMIN' ? 'Quản trị viên' : 'Người dùng';
+  }
+
+  confirmDeleteUser(user: User) {
+    this.userToDelete = user;
+    this.showModal();
+  }
+
+  showModal() {
+    const modalElement = this.deleteModalRef?.nativeElement;
+    if (modalElement) {
+      modalElement.style.display = 'block';
+      modalElement.classList.add('show');
+      document.body.classList.add('modal-open');
+
+      const backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop fade show';
+      backdrop.id = 'modal-backdrop';
+      document.body.appendChild(backdrop);
+    }
+  }
+
+  closeDeleteModal() {
+    const modalElement = this.deleteModalRef?.nativeElement;
+    if (modalElement) {
+      modalElement.style.display = 'none';
+      modalElement.classList.remove('show');
+      document.body.classList.remove('modal-open');
+
+      const backdrop = document.getElementById('modal-backdrop');
+      if (backdrop) {
+        backdrop.remove();
+      }
+    }
+    this.userToDelete = null;
+    this.deletingUserId = null;
+  }
+
+  deleteUser() {
+    if (!this.userToDelete) return;
+
+    this.deletingUserId = this.userToDelete.id;
+
+    this.apiService.deleteUser(this.userToDelete.id).subscribe({
+      next: () => {
+        this.showSuccessMessage(`Đã xóa người dùng ${this.userToDelete?.username} thành công`);
+        this.loadUsers();
+        this.closeDeleteModal();
+      },
+      error: (error) => {
+
+        console.error('Error deleting user:', error);
+        this.showErrorMessage('Không thể xóa người dùng. Vui lòng thử lại.');
+        this.deletingUserId = null;
+      }
+    });
+  }
+
+
+  showSuccessMessage(message: string) {
+    alert(message);
+  }
+
+  showErrorMessage(message: string) {
+    alert(message);
   }
 }

@@ -13,7 +13,7 @@ import { User } from '../models/user.model';
 export class ApiService {
   private baseUrl = 'http://localhost:8080/api';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   // Exercise APIs
   getExercises(): Observable<Exercise[]> {
@@ -38,10 +38,10 @@ export class ApiService {
 
   getExercisesPaged(page: number = 0, size: number = 10): Observable<any> {
     const params = new HttpParams()
-        .set('page', page.toString())
-        .set('size', size.toString());
+      .set('page', page.toString())
+      .set('size', size.toString());
     return this.http.get<any>(`${this.baseUrl}/exercises/paged`, { params });
-}
+  }
 
   // Topics APIs
   getExercisesByTopic(topic: string): Observable<Exercise[]> {
@@ -62,7 +62,7 @@ export class ApiService {
   }
 
   // Submission APIs
-createSubmission(submissionData: any): Observable<Submission> {
+  createSubmission(submissionData: any): Observable<Submission> {
     return this.http.post<Submission>(`${this.baseUrl}/submissions`, submissionData);
   }
 
@@ -149,9 +149,12 @@ createSubmission(submissionData: any): Observable<Submission> {
   }
 
   getUsersPaged(page: number = 0, size: number = 10): Observable<any> {
-  const params = new HttpParams()
+    const params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
-  return this.http.get<any>(`${this.baseUrl}/user/paged`, { params });
-}
+    return this.http.get<any>(`${this.baseUrl}/user/paged`, { params });
+  }
+  deleteUser(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/user/${id}`);
+  }
 }

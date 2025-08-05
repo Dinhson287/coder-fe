@@ -29,6 +29,7 @@
         <th>Email</th>
         <th>Vai trò</th>
         <th>Ngày tạo</th>
+        <th>Thao tác</th>
       </tr>
     </thead>
     <tbody>
@@ -42,6 +43,17 @@
           </span>
         </td>
         <td>{{ formatDate(user.createdAt) }}</td>
+        <td>
+          <button
+            class="btn btn-danger btn-sm"
+            (click)="confirmDeleteUser(user)"
+            [disabled]="deletingUserId === user.id"
+            title="Xóa người dùng">
+            <span *ngIf="deletingUserId === user.id" class="spinner-border spinner-border-sm me-1"></span>
+            <i class="fas fa-trash" *ngIf="deletingUserId !== user.id"></i>
+            {{ deletingUserId === user.id ? 'Đang xóa...' : 'Xóa' }}
+          </button>
+        </td>
       </tr>
     </tbody>
   </table>
@@ -51,14 +63,36 @@
   </nav>
 
   <div class="d-flex justify-content-center mt-4" *ngIf="!loading && !error && collectionSize > pageSize">
-  <ngb-pagination
-    [(page)]="currentPage"
-    [pageSize]="pageSize"
-    [collectionSize]="collectionSize"
-    (pageChange)="onPageChange($event)"
-    [maxSize]="5"
-    [rotate]="true"
-    [boundaryLinks]="true">
-  </ngb-pagination>
-</div>
+    <ngb-pagination
+      [(page)]="currentPage"
+      [pageSize]="pageSize"
+      [collectionSize]="collectionSize"
+      (pageChange)="onPageChange($event)"
+      [maxSize]="5"
+      [rotate]="true"
+      [boundaryLinks]="true">
+    </ngb-pagination>
+  </div>
+
+  <div class="modal fade" #deleteModal id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteConfirmModalLabel">Xác nhận xóa</h5>
+          <button type="button" class="btn-close" (click)="closeDeleteModal()" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Bạn có chắc chắn muốn xóa người dùng <strong>{{ userToDelete?.username }}</strong> không?</p>
+          <p class="text-muted">Hành động này không thể hoàn tác.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeDeleteModal()">Hủy</button>
+          <button type="button" class="btn btn-danger" (click)="deleteUser()" [disabled]="deletingUserId">
+            <span *ngIf="deletingUserId" class="spinner-border spinner-border-sm me-1"></span>
+            {{ deletingUserId ? 'Đang xóa...' : 'Xóa' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
