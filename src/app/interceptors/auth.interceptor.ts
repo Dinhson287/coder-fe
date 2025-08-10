@@ -46,20 +46,36 @@ export class AuthInterceptor implements HttpInterceptor {
 
   private shouldSkipInterceptor(req: HttpRequest<any>): boolean {
     const skipUrls = [
-      '/api/auth',
-      '/api/submissions',
+      '/api/auth/login',
+      '/api/auth/register',
+      '/api/auth/refresh',
       '/api/exercises',
       '/api/languages'
     ];
 
-    return skipUrls.some(url => req.url.includes(url)) || !isPlatformBrowser(this.platformId);
+    const shouldSkip = skipUrls.some(url => req.url.includes(url)) || !isPlatformBrowser(this.platformId);
+
+    if (req.url.includes('/api/auth')) {
+      console.log('Auth interceptor - skipping URL:', req.url, 'shouldSkip:', shouldSkip);
+    }
+
+    return shouldSkip;
   }
 
   private addTokenToRequest(req: HttpRequest<any>): HttpRequest<any> {
+    if (!isPlatformBrowser(this.platformId)) {
+      return req;
+    }
+
     const token = this.authService.getToken();
-    return token
-      ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
-      : req;
+    if (token && this.authService.hasValidToken()) {
+      return req.clone({
+        setHeaders: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+    }
+    return req;
   }
 
   private handle401Error(
@@ -77,13 +93,13 @@ export class AuthInterceptor implements HttpInterceptor {
             this.refreshSubject.next(success);
             return next.handle(this.addTokenToRequest(request));
           }
-          this.router.navigate(['/login']);
+
+          this.handleAuthFailure();
           return throwError(() => new Error('Refresh token failed'));
         }),
         catchError((error) => {
           this.isRefreshing = false;
-          this.authService.logout();
-          this.router.navigate(['/login']);
+          this.handleAuthFailure();
           return throwError(() => error);
         })
       );
@@ -93,6 +109,13 @@ export class AuthInterceptor implements HttpInterceptor {
         take(1),
         switchMap(() => next.handle(this.addTokenToRequest(request)))
       );
+    }
+  }
+
+  private handleAuthFailure(): void {
+    this.authService.logout();
+    if (this.router.url !== '/login' && this.router.url !== '/register') {
+      this.router.navigate(['/login']);
     }
   }
 }
