@@ -77,7 +77,6 @@ import { CodeExecutionService } from '../services/code-execution.service';
     </div>
   </div>
 
-  <!-- Loading state -->
   <div class="row" *ngIf="languages.length === 0">
     <div class="col-12 text-center">
       <div class="spinner-border" role="status">
@@ -87,7 +86,6 @@ import { CodeExecutionService } from '../services/code-execution.service';
     </div>
   </div>
 
-  <!-- Results -->
   <div class="row mt-3" *ngIf="latestSubmission">
     <div class="col-12">
       <div class="card">
@@ -98,8 +96,7 @@ import { CodeExecutionService } from '../services/code-execution.service';
           </span>
         </div>
         <div class="card-body">
-          <!-- Thêm phần so sánh kết quả -->
-          <div *ngIf="testResult" class="mb-3">
+          <div *ngIf="testResult && latestSubmission.status === 'SUCCESS'" class="mb-3">
             <h6>Kiểm tra kết quả:</h6>
             <div class="alert" [ngClass]="testResult.passed ? 'alert-success' : 'alert-danger'">
               {{ testResult.message }}
@@ -116,20 +113,120 @@ import { CodeExecutionService } from '../services/code-execution.service';
             </div>
           </div>
 
-          <div *ngIf="latestSubmission.stderr">
-            <h6>Error:</h6>
-            <pre class="bg-danger text-white p-2">{{ latestSubmission.stderr }}</pre>
-          </div>
-          <div *ngIf="latestSubmission.compileOutput">
-            <h6>Compile Output:</h6>
-            <pre class="bg-warning p-2">{{ latestSubmission.compileOutput }}</pre>
+          <div *ngIf="latestSubmission.status === 'ERROR' || latestSubmission.status === 'FAIL'" class="mb-3">
+            <div class="alert alert-danger">
+              <h6 class="alert-heading">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                {{ latestSubmission.status === 'ERROR' ? 'Lỗi thực thi' : 'Kết quả không đúng' }}
+              </h6>
+              <p class="mb-0">
+                {{ latestSubmission.status === 'ERROR'
+                    ? 'Code của bạn có lỗi trong quá trình biên dịch hoặc thực thi.'
+                    : 'Code chạy thành công nhưng kết quả không khớp với mong đợi.' }}
+              </p>
+            </div>
+
+            <div *ngIf="latestSubmission.compileOutput && latestSubmission.compileOutput.trim()" class="mb-3">
+              <h6 class="text-warning">
+                <i class="bi bi-gear-fill me-2"></i>Lỗi biên dịch:
+              </h6>
+              <div class="border border-warning rounded">
+                <pre class="bg-warning bg-opacity-10 p-3 m-0 text-dark">{{ latestSubmission.compileOutput }}</pre>
+              </div>
+            </div>
+
+            <div *ngIf="latestSubmission.stderr && latestSubmission.stderr.trim()" class="mb-3">
+              <h6 class="text-danger">
+                <i class="bi bi-bug-fill me-2"></i>Lỗi runtime:
+              </h6>
+              <div class="border border-danger rounded">
+                <pre class="bg-danger bg-opacity-10 p-3 m-0">{{ latestSubmission.stderr }}</pre>
+              </div>
+            </div>
+
+            <div *ngIf="latestSubmission.status === 'FAIL' && testResult" class="mb-3">
+              <h6 class="text-info">
+                <i class="bi bi-clipboard-check me-2"></i>So sánh kết quả:
+              </h6>
+              <div class="alert alert-info">
+                {{ testResult.message }}
+              </div>
+              <div class="row">
+                <div class="col-md-6">
+                  <h6>Output của bạn:</h6>
+                  <div class="border border-secondary rounded">
+                    <pre class="bg-light p-3 m-0">{{ testResult.actualOutput || 'Không có output' }}</pre>
+                  </div>
+                </div>
+                <div class="col-md-6" *ngIf="testResult.expectedOutput">
+                  <h6>Output mong đợi:</h6>
+                  <div class="border border-success rounded">
+                    <pre class="bg-success bg-opacity-10 p-3 m-0">{{ testResult.expectedOutput }}</pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-3">
+              <button
+                class="btn btn-outline-secondary btn-sm"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#debugInfo"
+                aria-expanded="false"
+                aria-controls="debugInfo">
+                <i class="bi bi-info-circle me-2"></i>Xem thông tin debug từ Judge0
+              </button>
+
+              <div class="collapse mt-2" id="debugInfo">
+                <div class="card">
+                  <div class="card-header bg-dark text-white">
+                    <small><i class="bi bi-terminal me-2"></i>Debug Log từ Judge0</small>
+                  </div>
+                  <div class="card-body bg-dark text-light">
+                    <div *ngIf="judge0DebugInfo" class="small">
+                      <div class="mb-2">
+                        <strong>Status ID:</strong> {{ judge0DebugInfo.status?.id || 'N/A' }}
+                      </div>
+                      <div class="mb-2">
+                        <strong>Status Description:</strong> {{ judge0DebugInfo.status?.description || 'N/A' }}
+                      </div>
+                      <div class="mb-2">
+                        <strong>stderr:</strong> {{ judge0DebugInfo.stderr ?? 'N/A' }}
+                      </div>
+                      <div class="mb-2">
+                        <strong>CPU Time:</strong> {{ judge0DebugInfo.time ?? 'N/A' }}s
+                      </div>
+                      <div *ngIf="judge0DebugInfo.message" class="mb-2">
+                        <strong>Message:</strong>
+                        <pre class="bg-secondary p-2 mt-1 rounded">{{ judge0DebugInfo.message }}</pre>
+                      </div>
+                      <div *ngIf="judge0DebugInfo.stdout" class="mb-2">
+                        <strong>Raw stdout:</strong>
+                        <pre class="bg-secondary p-2 mt-1 rounded">{{ judge0DebugInfo.stdout }}</pre>
+                      </div>
+                    </div>
+                    <div *ngIf="!judge0DebugInfo" class="text-muted">
+                      Không có thông tin debug từ Judge0
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <!-- Hiển thị thông tin execution -->
+          <div *ngIf="latestSubmission.status === 'SUCCESS' && latestSubmission.stdout" class="mb-3">
+            <h6 class="text-success">
+              <i class="bi bi-check-circle-fill me-2"></i>Output:
+            </h6>
+            <div class="border border-success rounded">
+              <pre class="bg-success bg-opacity-10 p-3 m-0">{{ latestSubmission.stdout }}</pre>
+            </div>
+          </div>
+
           <div *ngIf="latestSubmission.time" class="mt-3">
             <small class="text-muted">
               <span *ngIf="latestSubmission.time">Thời gian: {{ latestSubmission.time }}s</span>
-              <span *ngIf="latestSubmission.time"> | </span>
             </small>
           </div>
         </div>
@@ -137,7 +234,6 @@ import { CodeExecutionService } from '../services/code-execution.service';
     </div>
   </div>
 
-  <!-- History -->
   <div class="row mt-3" *ngIf="submissions.length > 0">
     <div class="col-12">
       <div class="card">
@@ -177,7 +273,6 @@ import { CodeExecutionService } from '../services/code-execution.service';
     </div>
   </div>
 
-  <!-- Submission Details Modal -->
   <div class="modal fade" id="submissionModal" tabindex="-1" *ngIf="selectedSubmissionDetail">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
@@ -237,6 +332,7 @@ export class CodeRunnerComponent implements OnInit {
   exerciseId: number | null = null;
   testResult: TestResult | null = null;
   selectedSubmissionDetail: Submission | null = null;
+  judge0DebugInfo: any = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -336,9 +432,9 @@ export class CodeRunnerComponent implements OnInit {
 
     this.submitting = true;
     this.testResult = null;
+    this.judge0DebugInfo = null; // Reset debug info
 
     try {
-
       const submissionData = {
         userId: currentUser.id,
         exerciseId: this.exerciseId,
@@ -364,6 +460,8 @@ export class CodeRunnerComponent implements OnInit {
       const judge0Result = await this.codeExecution.submitCode(code, selectedLanguage.code).toPromise();
       console.log('Judge0 result:', judge0Result);
 
+      this.judge0DebugInfo = judge0Result;
+      console.log('debug: ',this.judge0DebugInfo)
       const updateData = {
         stdout: judge0Result.stdout || '',
         stderr: judge0Result.stderr || '',
@@ -431,9 +529,19 @@ export class CodeRunnerComponent implements OnInit {
       return 'ERROR';
     }
 
+    if (judge0Result.status) {
+      const statusId = judge0Result.status.id;
+      if (statusId === 3) {
+        return 'SUCCESS';
+      } else if (statusId >= 4 && statusId <= 14) {
+        return 'ERROR';
+      }
+    }
+
     if (judge0Result.stdout && judge0Result.stdout.trim()) {
       return 'SUCCESS';
     }
+
     return 'FAIL';
   }
 

@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { Submission } from '../models/submission.model';
 import { ApiService } from '../services/api.service';
 import { AuthService } from '../services/auth.service';
@@ -22,7 +22,7 @@ export class MySubmissionsComponent implements OnInit {
   showModal = false;
   selectedSubmission: Submission | null = null;
 
-  constructor(private apiService: ApiService,private authService: AuthService) {}
+  constructor(private apiService: ApiService,private authService: AuthService,private router: Router) {}
 
   ngOnInit() {
     this.loadSubmissions();
@@ -72,6 +72,11 @@ loadSubmissions() {
   closeModal() {
     this.showModal = false;
     this.selectedSubmission = null;
+  }
+
+    goToExercise(exerciseId: number) {
+    this.closeModal();
+    this.router.navigate(['/code'], { queryParams: { exerciseId: exerciseId } });
   }
 
   getStatusClass(status: string): string {

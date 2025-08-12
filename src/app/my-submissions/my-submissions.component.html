@@ -115,8 +115,17 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" (click)="closeModal()">Đóng</button>
-          </div>
+        <div class="me-auto">
+          <button
+            class="btn btn-outline-primary btn-sm"
+            (click)="goToExercise(selectedSubmission.exerciseId)">
+            <i class="bi bi-arrow-left me-1"></i>Quay lại bài tập
+          </button>
+        </div>
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">
+          <i class="bi bi-x-lg me-1"></i>Đóng
+        </button>
+        </div>
         </div>
       </div>
     </div>
