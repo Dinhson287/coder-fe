@@ -4,6 +4,7 @@ import { AuthService } from '../services/auth.service';
 import { ApiService } from '../services/api.service';
 import { Submission } from '../models/submission.model';
 import { User } from '../models/user.model';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-profile',
@@ -24,7 +25,8 @@ export class ProfileComponent implements OnInit {
 
   constructor(
     private authService: AuthService,
-    private apiService: ApiService
+    private apiService: ApiService,
+    private router: Router
   ) { }
 
   ngOnInit() {
@@ -106,5 +108,8 @@ export class ProfileComponent implements OnInit {
 
   formatDate(dateString: string): string {
     return new Date(dateString).toLocaleString('vi-VN');
+  }
+  goToMySubmission(){
+    this.router.navigate(['/my-submissions'])
   }
 }

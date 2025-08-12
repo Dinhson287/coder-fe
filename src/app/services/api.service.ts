@@ -95,7 +95,7 @@ export class ApiService {
       .set('userId', userId.toString())
       .set('page', page.toString())
       .set('size', size.toString());
-    return this.http.get<any>(`${this.baseUrl}/submissions/my-submissions/paged`, { params });
+    return this.http.get<any>(`${this.baseUrl}/submissions/my-submissions/page`, { params });
   }
 
   getSubmissionsByExercise(exerciseId: number): Observable<Submission[]> {
@@ -132,6 +132,33 @@ export class ApiService {
   deleteSubmission(id: number, userId: number): Observable<void> {
     const params = new HttpParams().set('userId', userId.toString());
     return this.http.delete<void>(`${this.baseUrl}/submissions/${id}`, { params });
+  }
+    getMySubmissionsPagedWithFilters(
+    userId: number,
+    page: number = 0,
+    size: number = 10,
+    filters: {
+      languageId?: number | null;
+      status?: string | null;
+      exerciseKeyword?: string | null;
+    } = {}
+  ): Observable<any> {
+    let params = new HttpParams()
+      .set('userId', userId.toString())
+      .set('page', page.toString())
+      .set('size', size.toString());
+
+    if (filters.languageId) {
+      params = params.set('languageId', filters.languageId.toString());
+    }
+    if (filters.status) {
+      params = params.set('status', filters.status);
+    }
+    if (filters.exerciseKeyword) {
+      params = params.set('exerciseKeyword', filters.exerciseKeyword);
+    }
+
+    return this.http.get<any>(`${this.baseUrl}/submissions/my-submissions/paged`, { params });
   }
 
   // Language API

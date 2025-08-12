@@ -6,7 +6,7 @@ export class CodeExecutionService {
   apiUrl = 'https://judge0-ce.p.rapidapi.com/submissions';
   headers = new HttpHeaders({
     'content-type': 'application/json',
-    'X-RapidAPI-Key': '091f3f2760msh21de91828af1060p126631jsn0d40bd5c8c6b',
+    'X-RapidAPI-Key': 'ba3a9f30bfmsh0b9806837c15082p18c27djsn4aca2da5d9a4',
     'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com'
   });
 

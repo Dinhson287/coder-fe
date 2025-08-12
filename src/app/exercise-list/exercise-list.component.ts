@@ -5,6 +5,7 @@ import { Exercise, ExerciseUtils } from '../models/exercise.model';
 import { ApiService } from '../services/api.service';
 import { FormsModule } from '@angular/forms';
 import { NgbPaginationModule } from '@ng-bootstrap/ng-bootstrap';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-exercise-list',
@@ -33,7 +34,8 @@ export class ExerciseListComponent implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private apiService: ApiService,
-    private changeDetectorRef: ChangeDetectorRef
+    private changeDetectorRef: ChangeDetectorRef,
+    private authService: AuthService
   ) { }
 
   ngOnInit() {
@@ -58,7 +60,7 @@ export class ExerciseListComponent implements OnInit {
   loadExercises() {
     this.apiService.getExercises().subscribe({
       next: (exercises) => {
-        this.exercises = exercises;
+        this.exercises = this.sortExercises(exercises);
         this.collectionSize = exercises.length;
         this.loading = false;
         this.applyFilters();
@@ -123,11 +125,32 @@ export class ExerciseListComponent implements OnInit {
       );
     }
 
+    filtered = this.sortExercises(filtered);
+
     this.filteredExercises = filtered;
     this.collectionSize = filtered.length;
     this.currentPage = 1;
     this.updatePagedExercises();
+  }
 
+  sortExercises(exercises: Exercise[]): Exercise[] {
+    const difficultyOrder: Record<string, number> = {
+      'easy': 1,
+      'medium': 2,
+      'hard': 3
+    };
+
+    return exercises.sort((a, b) => {
+      const aDifficulty = a.difficulty?.toLowerCase() || '';
+      const bDifficulty = b.difficulty?.toLowerCase() || '';
+
+      if (difficultyOrder[aDifficulty] < difficultyOrder[bDifficulty]) return -1;
+      if (difficultyOrder[aDifficulty] > difficultyOrder[bDifficulty]) return 1;
+
+      const aTitle = a.title?.toLowerCase() || '';
+      const bTitle = b.title?.toLowerCase() || '';
+      return aTitle.localeCompare(bTitle);
+    });
   }
 
   totalPages(): number {
@@ -177,7 +200,15 @@ export class ExerciseListComponent implements OnInit {
   }
 
   viewExercise(id: number) {
-    this.router.navigate(['/code'], { queryParams: { exerciseId: id } });
+    if (!this.authService.isLoggedIn()) {
+      const confirm = window.confirm('Bạn cần đăng nhập để nộp bài. Bấm OK để chuyển đến trang đăng nhập.');
+      if (confirm) {
+        this.router.navigate(['/login']);
+      }
+      return;
+    } else {
+      this.router.navigate(['/code'], { queryParams: { exerciseId: id } });
+    }
   }
 
   getDifficultyClass(difficulty: string): string {

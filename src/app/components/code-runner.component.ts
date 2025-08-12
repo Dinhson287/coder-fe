@@ -61,18 +61,28 @@ import { CodeExecutionService } from '../services/code-execution.service';
           <app-monaco-code-editor #codeEditor></app-monaco-code-editor>
         </div>
         <div class="card-footer">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-            </div>
-            <button
-              class="btn btn-primary"
-              (click)="submitCode()"
-              [disabled]="submitting || !selectedLanguageId">
-              <span *ngIf="submitting" class="spinner-border spinner-border-sm me-2"></span>
-              {{ submitting ? 'Đang chạy...' : 'Submit' }}
-            </button>
-          </div>
-        </div>
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+    </div>
+    <div class="d-flex gap-2">
+      <button
+        class="btn btn-secondary"
+        (click)="runCode()"
+        [disabled]="submitting || !selectedLanguageId">
+        <span *ngIf="submitting && runMode" class="spinner-border spinner-border-sm me-2"></span>
+        {{ submitting && runMode ? 'Đang chạy thử...' : 'Run' }}
+      </button>
+      <button
+        class="btn btn-primary"
+        (click)="submitCode()"
+        [disabled]="submitting || !selectedLanguageId">
+        <span *ngIf="submitting && !runMode" class="spinner-border spinner-border-sm me-2"></span>
+        {{ submitting && !runMode ? 'Đang chạy...' : 'Submit' }}
+      </button>
+    </div>
+  </div>
+</div>
+
       </div>
     </div>
   </div>
@@ -333,6 +343,7 @@ export class CodeRunnerComponent implements OnInit {
   testResult: TestResult | null = null;
   selectedSubmissionDetail: Submission | null = null;
   judge0DebugInfo: any = null;
+  runMode = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -340,7 +351,7 @@ export class CodeRunnerComponent implements OnInit {
     private authService: AuthService,
     private router: Router,
     private codeExecution: CodeExecutionService
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.route.queryParams.subscribe(params => {
@@ -352,6 +363,57 @@ export class CodeRunnerComponent implements OnInit {
     });
     this.loadLanguages();
   }
+
+  async runCode() {
+  this.runMode = true;
+  this.submitting = true;
+  this.testResult = null;
+  this.judge0DebugInfo = null;
+
+  try {
+    const selectedLanguage = this.getSelectedLanguage();
+    if (!selectedLanguage) {
+      alert('Vui lòng chọn ngôn ngữ lập trình');
+      return;
+    }
+
+    const code = this.codeEditor.getCode();
+    if (!code.trim()) {
+      alert('Vui lòng nhập code');
+      return;
+    }
+
+    const judge0Result = await this.codeExecution.submitCode(code, selectedLanguage.code).toPromise();
+    console.log('Run result:', judge0Result);
+
+    this.judge0DebugInfo = judge0Result;
+
+    this.latestSubmission = {
+      id: 0,
+      userId: this.authService.getCurrentUser()?.id ?? 0,
+      username: this.authService.getCurrentUser()?.username ?? 'Chạy thử',
+      exerciseId: this.exerciseId ?? 0,
+      exerciseTitle: this.exercise?.title ?? '',
+      languageId: selectedLanguage.id,
+      languageName: selectedLanguage.name,
+      sourceCode: code,
+      status: this.determineStatus(judge0Result) as 'PENDING' | 'SUCCESS' | 'FAIL' | 'ERROR',
+      stdout: judge0Result.stdout || '',
+      stderr: judge0Result.stderr || '',
+      compileOutput: judge0Result.compile_output || '',
+      time: judge0Result.time ? parseFloat(judge0Result.time) : undefined,
+      createdAt: new Date().toISOString()
+    };
+
+    this.compareResults(this.latestSubmission);
+  } catch (error) {
+    console.error('Run error:', error);
+    alert('Có lỗi khi chạy thử code.');
+  } finally {
+    this.submitting = false;
+    this.runMode = false;
+  }
+}
 
   loadLanguages() {
     this.apiService.getLanguages().subscribe({
@@ -384,12 +446,6 @@ export class CodeRunnerComponent implements OnInit {
   }
 
   async submitCode() {
-    console.log('=== SUBMIT CODE DEBUG ===');
-    console.log('Exercise ID:', this.exerciseId);
-    console.log('Selected Language ID:', this.selectedLanguageId);
-    console.log('Selected Language ID type:', typeof this.selectedLanguageId);
-    console.log('Available languages:', this.languages);
-
     if (!this.exerciseId) {
       alert('Không tìm thấy bài tập');
       return;
@@ -432,7 +488,7 @@ export class CodeRunnerComponent implements OnInit {
 
     this.submitting = true;
     this.testResult = null;
-    this.judge0DebugInfo = null; // Reset debug info
+    this.judge0DebugInfo = null;
 
     try {
       const submissionData = {
@@ -461,7 +517,7 @@ export class CodeRunnerComponent implements OnInit {
       console.log('Judge0 result:', judge0Result);
 
       this.judge0DebugInfo = judge0Result;
-      console.log('debug: ',this.judge0DebugInfo)
+      console.log('debug: ', this.judge0DebugInfo)
       const updateData = {
         stdout: judge0Result.stdout || '',
         stderr: judge0Result.stderr || '',
@@ -521,83 +577,87 @@ export class CodeRunnerComponent implements OnInit {
   }
 
   private determineStatus(judge0Result: any): string {
-    if (judge0Result.compile_output && judge0Result.compile_output.trim()) {
-      return 'ERROR';
-    }
-
-    if (judge0Result.stderr && judge0Result.stderr.trim()) {
-      return 'ERROR';
-    }
-
-    if (judge0Result.status) {
-      const statusId = judge0Result.status.id;
-      if (statusId === 3) {
-        return 'SUCCESS';
-      } else if (statusId >= 4 && statusId <= 14) {
-        return 'ERROR';
-      }
-    }
-
-    if (judge0Result.stdout && judge0Result.stdout.trim()) {
-      return 'SUCCESS';
-    }
-
-    return 'FAIL';
+  if (judge0Result.compile_output && judge0Result.compile_output.trim()) {
+    return 'ERROR';
   }
+
+  if (judge0Result.stderr && judge0Result.stderr.trim()) {
+    return 'ERROR';
+  }
+
+  if (judge0Result.status) {
+    const statusId = judge0Result.status.id;
+    if (statusId === 3) {
+      return 'SUCCESS';
+    } else if (statusId >= 4 && statusId <= 14) {
+      return 'ERROR';
+    }
+  }
+  if (judge0Result.stdout && judge0Result.stdout.trim()) {
+    return 'SUCCESS';
+  }
+
+  return 'FAIL';
+}
 
   compareResults(submission: Submission) {
-    if (!this.exercise) {
-      this.testResult = {
-        passed: false,
-        actualOutput: submission.stdout || '',
-        expectedOutput: 'Không có bài tập để so sánh',
-        message: 'Không thể so sánh do thiếu thông tin bài tập'
-      };
-      return;
-    }
-
-    const actualOutput = (submission.stdout || '').trim();
-    let expectedOutput = '';
-    let passed = false;
-
-    if (this.exercise.sampleOutput) {
-      expectedOutput = this.exercise.sampleOutput.trim();
-      passed = actualOutput === expectedOutput;
-    } else {
-      passed = !!actualOutput && !submission.stderr && !submission.compileOutput;
-      expectedOutput = 'Không có output mẫu để so sánh';
-    }
-
-    if (submission.stderr || submission.compileOutput) {
-      passed = false;
-    }
-
+  if (!this.exercise) {
     this.testResult = {
-      passed: passed,
-      actualOutput: actualOutput,
-      expectedOutput: expectedOutput,
-      message: passed
-        ? 'Chính xác! Output khớp với kết quả mong đợi.'
-        : 'Sai! Output không khớp với kết quả mong đợi.'
+      passed: false,
+      actualOutput: submission.stdout || '',
+      expectedOutput: 'Không có bài tập để so sánh',
+      message: 'Không thể so sánh do thiếu thông tin bài tập'
     };
-
-    const finalStatus = passed ? 'SUCCESS' : 'FAIL';
-
-    if (submission.status !== finalStatus && submission.id) {
-      const updateData = { status: finalStatus };
-      this.apiService.updateSubmissionResult(submission.id, updateData).subscribe({
-        next: (updated) => {
-          if (updated) {
-            this.latestSubmission = updated;
-            this.loadSubmissions();
-          }
-        },
-        error: (error) => {
-          console.error('Error updating final status:', error);
-        }
-      });
-    }
+    return;
   }
+
+  const actualOutput = (submission.stdout || '').trim();
+  let expectedOutput = '';
+  let passed = false;
+
+  if (this.exercise.sampleOutput) {
+    expectedOutput = this.exercise.sampleOutput.trim();
+    passed = actualOutput === expectedOutput;
+  } else {
+    passed = !!actualOutput && !submission.stderr && !submission.compileOutput;
+    expectedOutput = 'Không có output mẫu để so sánh';
+  }
+
+  if (submission.stderr || submission.compileOutput) {
+    passed = false;
+  }
+
+  const finalStatus = passed ? 'SUCCESS' : 'FAIL';
+
+  this.testResult = {
+    passed: passed,
+    actualOutput: actualOutput,
+    expectedOutput: expectedOutput,
+    message: passed
+      ? 'Chính xác! Output khớp với kết quả mong đợi.'
+      : 'Sai! Output không khớp với kết quả mong đợi.'
+  };
+
+  if (this.runMode) {
+    this.latestSubmission = {
+      ...submission,
+      status: finalStatus as any
+    };
+  } else if (submission.id) {
+    const updateData = { status: finalStatus };
+    this.apiService.updateSubmissionResult(submission.id, updateData).subscribe({
+      next: (updated) => {
+        if (updated) {
+          this.latestSubmission = updated;
+          this.loadSubmissions();
+        }
+      },
+      error: (error) => {
+        console.error('Error updating final status:', error);
+      }
+    });
+  }
+}
 
   viewSubmissionDetails(submission: Submission) {
     this.selectedSubmissionDetail = submission;
@@ -619,20 +679,22 @@ export class CodeRunnerComponent implements OnInit {
   }
 
   loadSubmissions() {
-    if (this.exerciseId && this.authService.isLoggedIn()) {
-      const currentUser = this.authService.getCurrentUser();
-      if (currentUser) {
-        this.apiService.getMySubmissionsForExercise(currentUser.id, this.exerciseId).subscribe({
-          next: (submissions) => {
-            this.submissions = submissions;
-          },
-          error: (error) => {
-            console.error('Error loading submissions:', error);
-          }
-        });
-      }
+  if (this.exerciseId && this.authService.isLoggedIn()) {
+    const currentUser = this.authService.getCurrentUser();
+    if (currentUser) {
+      this.apiService.getMySubmissionsForExercise(currentUser.id, this.exerciseId).subscribe({
+        next: (submissions) => {
+          const sortedSubmissions = submissions.sort((a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          this.submissions = sortedSubmissions.slice(0, 10);
+        },
+        error: (error) => {
+          console.error('Error loading submissions:', error);
+        }
+      });
     }
   }
+}
 
   getDifficultyClass(difficulty: string): string {
     switch (difficulty) {
