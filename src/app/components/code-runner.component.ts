@@ -249,9 +249,9 @@ import { CodeExecutionService } from '../services/code-execution.service';
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
           <h6>Lịch sử nộp bài</h6>
-          <button class="btn btn-sm btn-outline-primary" (click)="loadSubmissions()">
+          <!-- <button class="btn btn-sm btn-outline-primary" (click)="loadSubmissions()">
             <i class="bi bi-arrow-clockwise"></i> Refresh
-          </button>
+          </button> -->
         </div>
         <div class="card-body">
           <div class="table-responsive">
@@ -365,55 +365,55 @@ export class CodeRunnerComponent implements OnInit {
   }
 
   async runCode() {
-  this.runMode = true;
-  this.submitting = true;
-  this.testResult = null;
-  this.judge0DebugInfo = null;
+    this.runMode = true;
+    this.submitting = true;
+    this.testResult = null;
+    this.judge0DebugInfo = null;
 
-  try {
-    const selectedLanguage = this.getSelectedLanguage();
-    if (!selectedLanguage) {
-      alert('Vui lòng chọn ngôn ngữ lập trình');
-      return;
+    try {
+      const selectedLanguage = this.getSelectedLanguage();
+      if (!selectedLanguage) {
+        alert('Vui lòng chọn ngôn ngữ lập trình');
+        return;
+      }
+
+      const code = this.codeEditor.getCode();
+      if (!code.trim()) {
+        alert('Vui lòng nhập code');
+        return;
+      }
+
+      const judge0Result = await this.codeExecution.submitCode(code, selectedLanguage.code).toPromise();
+      console.log('Run result:', judge0Result);
+
+      this.judge0DebugInfo = judge0Result;
+
+      this.latestSubmission = {
+        id: 0,
+        userId: this.authService.getCurrentUser()?.id ?? 0,
+        username: this.authService.getCurrentUser()?.username ?? 'Chạy thử',
+        exerciseId: this.exerciseId ?? 0,
+        exerciseTitle: this.exercise?.title ?? '',
+        languageId: selectedLanguage.id,
+        languageName: selectedLanguage.name,
+        sourceCode: code,
+        status: this.determineStatus(judge0Result) as 'PENDING' | 'SUCCESS' | 'FAIL' | 'ERROR',
+        stdout: judge0Result.stdout || '',
+        stderr: judge0Result.stderr || '',
+        compileOutput: judge0Result.compile_output || '',
+        time: judge0Result.time ? parseFloat(judge0Result.time) : undefined,
+        createdAt: new Date().toISOString()
+      };
+
+      this.compareResults(this.latestSubmission);
+    } catch (error) {
+      console.error('Run error:', error);
+      alert('Có lỗi khi chạy thử code.');
+    } finally {
+      this.submitting = false;
+      this.runMode = false;
     }
-
-    const code = this.codeEditor.getCode();
-    if (!code.trim()) {
-      alert('Vui lòng nhập code');
-      return;
-    }
-
-    const judge0Result = await this.codeExecution.submitCode(code, selectedLanguage.code).toPromise();
-    console.log('Run result:', judge0Result);
-
-    this.judge0DebugInfo = judge0Result;
-
-    this.latestSubmission = {
-      id: 0,
-      userId: this.authService.getCurrentUser()?.id ?? 0,
-      username: this.authService.getCurrentUser()?.username ?? 'Chạy thử',
-      exerciseId: this.exerciseId ?? 0,
-      exerciseTitle: this.exercise?.title ?? '',
-      languageId: selectedLanguage.id,
-      languageName: selectedLanguage.name,
-      sourceCode: code,
-      status: this.determineStatus(judge0Result) as 'PENDING' | 'SUCCESS' | 'FAIL' | 'ERROR',
-      stdout: judge0Result.stdout || '',
-      stderr: judge0Result.stderr || '',
-      compileOutput: judge0Result.compile_output || '',
-      time: judge0Result.time ? parseFloat(judge0Result.time) : undefined,
-      createdAt: new Date().toISOString()
-    };
-
-    this.compareResults(this.latestSubmission);
-  } catch (error) {
-    console.error('Run error:', error);
-    alert('Có lỗi khi chạy thử code.');
-  } finally {
-    this.submitting = false;
-    this.runMode = false;
   }
-}
 
   loadLanguages() {
     this.apiService.getLanguages().subscribe({
@@ -577,87 +577,159 @@ export class CodeRunnerComponent implements OnInit {
   }
 
   private determineStatus(judge0Result: any): string {
-  if (judge0Result.compile_output && judge0Result.compile_output.trim()) {
-    return 'ERROR';
-  }
-
-  if (judge0Result.stderr && judge0Result.stderr.trim()) {
-    return 'ERROR';
-  }
-
-  if (judge0Result.status) {
-    const statusId = judge0Result.status.id;
-    if (statusId === 3) {
-      return 'SUCCESS';
-    } else if (statusId >= 4 && statusId <= 14) {
+    if (judge0Result.compile_output && judge0Result.compile_output.trim()) {
       return 'ERROR';
     }
-  }
-  if (judge0Result.stdout && judge0Result.stdout.trim()) {
-    return 'SUCCESS';
+
+    if (judge0Result.stderr && judge0Result.stderr.trim()) {
+      return 'ERROR';
+    }
+
+    if (judge0Result.status) {
+      const statusId = judge0Result.status.id;
+      if (statusId === 3) {
+        return 'SUCCESS';
+      } else if (statusId >= 4 && statusId <= 14) {
+        return 'ERROR';
+      }
+    }
+    if (judge0Result.stdout && judge0Result.stdout.trim()) {
+      return 'SUCCESS';
+    }
+
+    return 'FAIL';
   }
 
-  return 'FAIL';
-}
+  private normalizeOutput(output: string): string {
+    return output
+      .replace(/\s+/g, '') // bỏ tất cả khoảng trắng
+      .toLowerCase(); // Chuyển về lowercase
+  }
+
+  //so sánh số trong khoảng sai số cho phép
+  private compareNumbers(actual: string, expected: string, tolerance = 1e-9): boolean {
+    const actualNum = parseFloat(actual);
+    const expectedNum = parseFloat(expected);
+
+    if (isNaN(actualNum) || isNaN(expectedNum)) {
+      return false;
+    }
+
+    return Math.abs(actualNum - expectedNum) <= tolerance;
+  }
+
+  private parseMultipleOutputs(output: string): string[] {
+    return output
+      .split(/[\n\r]+/) // Tách theo dòng
+      .map(line => line.trim()) // Trim từng dòng
+      .filter(line => line.length > 0); // bỏ dòng trống
+  }
 
   compareResults(submission: Submission) {
-  if (!this.exercise) {
-    this.testResult = {
-      passed: false,
-      actualOutput: submission.stdout || '',
-      expectedOutput: 'Không có bài tập để so sánh',
-      message: 'Không thể so sánh do thiếu thông tin bài tập'
-    };
-    return;
-  }
+    if (!this.exercise) {
+      this.testResult = {
+        passed: false,
+        actualOutput: submission.stdout || '',
+        expectedOutput: 'Không có bài tập để so sánh',
+        message: 'Không thể so sánh do thiếu thông tin bài tập'
+      };
+      return;
+    }
 
-  const actualOutput = (submission.stdout || '').trim();
-  let expectedOutput = '';
-  let passed = false;
+    if (submission.stderr?.trim() || submission.compileOutput?.trim()) {
+      this.testResult = {
+        passed: false,
+        actualOutput: submission.stdout || '',
+        expectedOutput: this.exercise.sampleOutput || '',
+        message: 'Code có lỗi biên dịch hoặc runtime'
+      };
+      this.updateSubmissionStatus(submission, 'FAIL');
+      return;
+    }
 
-  if (this.exercise.sampleOutput) {
-    expectedOutput = this.exercise.sampleOutput.trim();
-    passed = actualOutput === expectedOutput;
-  } else {
-    passed = !!actualOutput && !submission.stderr && !submission.compileOutput;
-    expectedOutput = 'Không có output mẫu để so sánh';
-  }
+    const actualOutput = (submission.stdout || '').trim();
 
-  if (submission.stderr || submission.compileOutput) {
-    passed = false;
-  }
+    if (!this.exercise.sampleOutput) {
+      const passed = !!actualOutput;
+      this.testResult = {
+        passed,
+        actualOutput,
+        expectedOutput: 'Không có output mẫu để so sánh',
+        message: passed ? 'Code chạy thành công và có output' : 'Code chạy nhưng không có output'
+      };
+      this.updateSubmissionStatus(submission, passed ? 'SUCCESS' : 'FAIL');
+      return;
+    }
 
-  const finalStatus = passed ? 'SUCCESS' : 'FAIL';
+    const expectedOutput = this.exercise.sampleOutput.trim();
+    let passed = false;
+    let message = '';
 
-  this.testResult = {
-    passed: passed,
-    actualOutput: actualOutput,
-    expectedOutput: expectedOutput,
-    message: passed
-      ? 'Chính xác! Output khớp với kết quả mong đợi.'
-      : 'Sai! Output không khớp với kết quả mong đợi.'
-  };
+    if (actualOutput === expectedOutput) {
+      passed = true;
+      message = 'Chính xác!';
+    }
+    else if (this.normalizeOutput(actualOutput) === this.normalizeOutput(expectedOutput)) {
+      passed = true;
+      message = 'Đúng! Output khớp về nội dung (bỏ qua format và chữ hoa/thường).';
+    }
+    // else if (this.compareNumbers(actualOutput, expectedOutput)) {
+    //   passed = true;
+    //   message = 'Đúng! Kết quả số khớp trong phạm vi sai số cho phép.';
+    // }
+    else {
+      const actualLines = this.parseMultipleOutputs(actualOutput);
+      const expectedLines = this.parseMultipleOutputs(expectedOutput);
 
-  if (this.runMode) {
-    this.latestSubmission = {
-      ...submission,
-      status: finalStatus as any
-    };
-  } else if (submission.id) {
-    const updateData = { status: finalStatus };
-    this.apiService.updateSubmissionResult(submission.id, updateData).subscribe({
-      next: (updated) => {
-        if (updated) {
-          this.latestSubmission = updated;
-          this.loadSubmissions();
+      if (actualLines.length === expectedLines.length) {
+        const allMatch = actualLines.every((line, index) =>
+          this.normalizeOutput(line) === this.normalizeOutput(expectedLines[index])
+        // || this.compareNumbers(line, expectedLines[index])
+        );
+
+        if (allMatch) {
+          passed = true;
+          message = 'Đúng! Tất cả dòng output đều khớp.';
         }
-      },
-      error: (error) => {
-        console.error('Error updating final status:', error);
       }
-    });
+    }
+
+    if (!passed) {
+      message = 'Sai! Output không khớp với kết quả mong đợi.';
+
+      if (actualOutput.length !== expectedOutput.length) {
+        message += ` (Độ dài khác nhau: ${actualOutput.length} vs ${expectedOutput.length})`;
+      }
+    }
+
+    this.testResult = {
+      passed,
+      actualOutput,
+      expectedOutput,
+      message
+    };
+
+    this.updateSubmissionStatus(submission, passed ? 'SUCCESS' : 'FAIL');
   }
-}
+
+  private updateSubmissionStatus(submission: Submission, status: string) {
+    if (this.runMode) {
+      this.latestSubmission = { ...submission, status: status as any };
+    } else if (submission.id) {
+      const updateData = { status };
+      this.apiService.updateSubmissionResult(submission.id, updateData).subscribe({
+        next: (updated) => {
+          if (updated) {
+            this.latestSubmission = updated;
+            this.loadSubmissions();
+          }
+        },
+        error: (error) => {
+          console.error('Error updating final status:', error);
+        }
+      });
+    }
+  }
 
   viewSubmissionDetails(submission: Submission) {
     this.selectedSubmissionDetail = submission;
@@ -679,22 +751,22 @@ export class CodeRunnerComponent implements OnInit {
   }
 
   loadSubmissions() {
-  if (this.exerciseId && this.authService.isLoggedIn()) {
-    const currentUser = this.authService.getCurrentUser();
-    if (currentUser) {
-      this.apiService.getMySubmissionsForExercise(currentUser.id, this.exerciseId).subscribe({
-        next: (submissions) => {
-          const sortedSubmissions = submissions.sort((a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-          this.submissions = sortedSubmissions.slice(0, 10);
-        },
-        error: (error) => {
-          console.error('Error loading submissions:', error);
-        }
-      });
+    if (this.exerciseId && this.authService.isLoggedIn()) {
+      const currentUser = this.authService.getCurrentUser();
+      if (currentUser) {
+        this.apiService.getMySubmissionsForExercise(currentUser.id, this.exerciseId).subscribe({
+          next: (submissions) => {
+            const sortedSubmissions = submissions.sort((a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            this.submissions = sortedSubmissions.slice(0, 10);
+          },
+          error: (error) => {
+            console.error('Error loading submissions:', error);
+          }
+        });
+      }
     }
   }
-}
 
   getDifficultyClass(difficulty: string): string {
     switch (difficulty) {
