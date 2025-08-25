@@ -7,7 +7,7 @@
         <input
           type="text"
           class="form-control"
-          placeholder="Tìm theo tên, mô tả, chủ đề..."
+          placeholder="Tìm theo ID, tên, mô tả, chủ đề..."
           [(ngModel)]="searchTerm"
           (input)="applyFilters()">
         <button class="btn btn-outline-primary" type="button" (click)="applyFilters()">
@@ -73,7 +73,10 @@
         <div class="card-body">
           <div class="row">
             <div class="col-md-8">
-              <h5 class="card-title">{{ exercise.title }}</h5>
+              <div class="d-flex align-items-center mb-2">
+                <span class="badge bg-secondary me-2">#{{ exercise.id }}</span>
+                <h5 class="card-title mb-0">{{ exercise.title }}</h5>
+              </div>
               <p class="card-text">{{ exercise.description | slice:0:150 }}{{ exercise.description.length > 150 ? '...' : '' }}</p>
 
               <div class="mb-2" *ngIf="getTopicsList(exercise).length > 0">

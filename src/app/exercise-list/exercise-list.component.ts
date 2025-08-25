@@ -98,40 +98,45 @@ export class ExerciseListComponent implements OnInit {
     });
   }
 
-  applyFilters() {
-    let filtered = [...this.exercises];
+applyFilters() {
+  let filtered = [...this.exercises];
 
-    if (this.searchTerm && this.searchTerm.trim()) {
-      const searchLower = this.searchTerm.toLowerCase().trim();
-      filtered = filtered.filter(ex => {
-        const titleMatch = ex.title?.toLowerCase().includes(searchLower);
-        const descMatch = ex.description?.toLowerCase().includes(searchLower);
-        const topicMatch = ExerciseUtils.getTopicsList(ex).some(topic =>
-          topic.toLowerCase().includes(searchLower)
-        );
-        return titleMatch || descMatch || topicMatch;
-      });
-    }
-
-    if (this.selectedTopic && this.selectedTopic.trim()) {
-      filtered = filtered.filter(ex =>
-        ExerciseUtils.containsTopic(ex, this.selectedTopic)
+  if (this.searchTerm && this.searchTerm.trim()) {
+    const searchLower = this.searchTerm.toLowerCase().trim();
+    filtered = filtered.filter(ex => {
+      //ID
+      const idMatch = ex.id?.toString().includes(this.searchTerm.trim());
+      //tên
+      const titleMatch = ex.title?.toLowerCase().includes(searchLower);
+      //mô tả
+      const descMatch = ex.description?.toLowerCase().includes(searchLower);
+      //chủ đề
+      const topicMatch = ExerciseUtils.getTopicsList(ex).some(topic =>
+        topic.toLowerCase().includes(searchLower)
       );
-    }
-
-    if (this.selectedDifficulty && this.selectedDifficulty.trim()) {
-      filtered = filtered.filter(ex =>
-        ex.difficulty?.toLowerCase() === this.selectedDifficulty.toLowerCase()
-      );
-    }
-
-    filtered = this.sortExercises(filtered);
-
-    this.filteredExercises = filtered;
-    this.collectionSize = filtered.length;
-    this.currentPage = 1;
-    this.updatePagedExercises();
+      return idMatch || titleMatch || descMatch || topicMatch;
+    });
   }
+
+  if (this.selectedTopic && this.selectedTopic.trim()) {
+    filtered = filtered.filter(ex =>
+      ExerciseUtils.containsTopic(ex, this.selectedTopic)
+    );
+  }
+
+  if (this.selectedDifficulty && this.selectedDifficulty.trim()) {
+    filtered = filtered.filter(ex =>
+      ex.difficulty?.toLowerCase() === this.selectedDifficulty.toLowerCase()
+    );
+  }
+
+  filtered = this.sortExercises(filtered);
+
+  this.filteredExercises = filtered;
+  this.collectionSize = filtered.length;
+  this.currentPage = 1;
+  this.updatePagedExercises();
+}
 
   sortExercises(exercises: Exercise[]): Exercise[] {
     const difficultyOrder: Record<string, number> = {
